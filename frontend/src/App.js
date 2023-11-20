@@ -1,5 +1,5 @@
 import React from 'react';
-import GameComponent from './components/GameComponent';
+import GameContainer from './components/GameContainer';
 
 function App() {
   return (
@@ -9,7 +9,7 @@ function App() {
           </header>
           
           <main>
-              <GameComponent />
+              <GameContainer />
               {/* You can add more components here as your app grows */}
           </main>
 

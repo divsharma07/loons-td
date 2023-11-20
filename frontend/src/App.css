@@ -36,3 +36,16 @@
     transform: rotate(360deg);
   }
 }
+
+#phaser-container {
+  width: 100%;
+  height: 100%;
+}
+
+#phaser-container button {
+  position: absolute;
+  top: 50%;  /* Center the button */
+  left: 50%;
+  transform: translate(-50%, -50%); /* Center the button */
+  z-index: 10; /* Ensure it's above the Phaser canvas */
+}

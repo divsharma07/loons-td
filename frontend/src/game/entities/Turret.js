@@ -1,4 +1,4 @@
-class Turret {
+export class Turret {
     constructor(id, level, position) {
         this.id = id;
         this.level = level;
@@ -17,3 +17,5 @@ class Turret {
         }
     }
 }
+
+export default Turret;
