@@ -1,17 +1,13 @@
-class Loon {
-    constructor(id, position) {
+import Phaser from 'phaser';
+class Loon extends Phaser.GameObjects.Sprite {
+    constructor(scene, id, position, type) {
+        super(scene, position.x, position.y, type)
         this.id = id;
-        this.level = 1;
+        this.level = LoonType[type];
         this.position = position;
-        this.sprite = null;
-    }
-
-    setSprite(sprite) {
-        this.sprite = sprite;
-    }
-
-    setLevel(level) {
-        this.level = level;
+        scene.add.existing(this);
+        this.scene = scene;
+        this.setScale(0.02);
     }
 
     updatePosition(newPosition) {
@@ -20,6 +16,16 @@ class Loon {
             this.sprite.setPosition(newPosition.x, newPosition.y);
         }
     }
+
+    destroy() {
+        if (this.sprite) {
+            this.sprite.destroy();
+        }
+    }
 }
+
+const LoonType = {
+    b1: 1,
+};
 
 export default Loon;

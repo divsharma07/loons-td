@@ -5,22 +5,22 @@ class WebSocketService {
     }
 
     connectAndSubscribe(onMessage) {
-        const email = 'sharmadivyanshu1996@gmail.com'; // Replace with your email
-        const serverUrl = `wss://pronto-challenge.ngrok.app/${email}/ws`;
-        const newSocket = new WebSocket(serverUrl);
-
-        newSocket.onopen = () => {
+        this.socket.onopen = () => {
             console.log('Connected to the server');
-            newSocket.send(JSON.stringify({ 'subscribe': 'msg' }));
-            newSocket.send(JSON.stringify({ 'subscribe': 'loonState' }));
+            this.socket.send(JSON.stringify({ 'subscribe': 'msg' }));
+            this.socket.send(JSON.stringify({ 'subscribe': 'loonState' }));
         };
 
-        newSocket.onmessage = (event) => {
+        this.socket.onmessage = (event) => {
             onMessage(event);
         };
 
-        newSocket.onclose = () => console.log('WebSocket closed');
-        newSocket.onerror = (error) => console.error('WebSocket error:', error);
+        this.socket.onclose = () => console.log('WebSocket closed');
+        this.socket.onerror = (error) => console.error('WebSocket error:', error);
+    }
+
+    connected() {
+        return this.socket.connected;
     }
 
     sendMessage(message) {
