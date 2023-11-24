@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import GamePanel from './Panel';
+import GamePanel from './GamePanel';
 import Position from './Position';
 import Loon from './Loon';
 import Turret from './Turret';
@@ -17,18 +17,18 @@ class Game extends Phaser.Scene {
         this.loonSprites = ["b1"];
         this.turretSprites = ["t1", "t2"];
         this.activeTurrets = [];
-        this.loons = {};
+        this.loons = new Map();
     }
 
     preload() {
-        this.load.image('base_tiles', 'assets/base_tiles.png')
-        this.load.tilemapTiledJSON('tilemap', 'assets/base_tiles.json')
-
+        // preloading all sprites and images
+        this.load.image('base_tiles', 'assets/base_tiles.png');
+        this.load.tilemapTiledJSON('tilemap', 'assets/base_tiles.json');
+        this.load.image("bullet", "assets/bullet.png");
         // load all loons
         this.loonSprites.forEach((loon) => {
             this.load.image(loon, `assets/${loon}.png`);
         });
-
         // load all turrets
         this.turretSprites.forEach((turret) => {
             this.load.image(turret, `assets/${turret}.png`);
@@ -40,7 +40,12 @@ class Game extends Phaser.Scene {
         this.registry.set(loonsSpriteKey, this.loonSprites);
         this.registry.set(loonsKey, this.loons);
         // subscribe to turret dragging event
-        
+
+        // Create a physics group for loons
+        this.loonsGroup = this.physics.add.group({
+            classType: Loon,
+        });
+
         // drawing the tile layers
         const map = this.make.tilemap({ key: 'tilemap' })
         // parameters need to match the config added to the json
@@ -54,43 +59,48 @@ class Game extends Phaser.Scene {
         foreground_layer.setScale(scale);
         // registering event that tracks turret placement
         this.events.on('createDraggableTurret', this.createDraggableTurret, this);
-        this.registry.events.on('changedata', this.onRegistryChange, this);
     }
 
     createDraggableTurret(data) {
         let draggedTurret = new Turret(this, data.turretType, new Position(data.x, data.y),
-         data.turretType, true).setInteractive();
+            data.turretType, true, this.loonsGroup).setInteractive();
         this.input.setDraggable(draggedTurret);
         draggedTurret.isTurret = true;
-        draggedTurret.setData('isDragging', true);
 
         this.input.on('drag', (pointer, gameObject) => {
-            if (gameObject.getData('isDragging')) {
+            if (gameObject.isDragging()) {
                 gameObject.x = pointer.x;
                 gameObject.y = pointer.y;
             }
         });
 
         this.input.on('dragend', (pointer, gameObject) => {
-            if (gameObject.getData('isDragging')) {
+            if (gameObject.isDragging()) {
                 // Finalize turret placement
                 this.activeTurrets.push(gameObject);
                 this.scene.bringToTop('GamePanel');
-                gameObject.setData('isDragging', false);
+                gameObject.setDragging(false);
                 // Optional: Snap turret to grid or validate position here
             }
         });
     }
 
-    onRegistryChange(parent, key, data) {
-        if (key === loonsKey) {
-            // The 'loonsKey' value has changed. Do something with the new value.
-            console.log(data);
-        }
-    }
+
+
+    // onRegistryChange(parent, key, data) {
+    //     if (key === loonsKey) {
+    //         // The 'loonsKey' value has changed. Do something with the new value.
+    //         if(data !== undefined) {
+    //             data.forEach((value, id) => {
+    //                 this.updateBalloonPositions({id: id, position: value.position});
+    //             });
+    //         }
+
+    //     }
+    // }
 
     startGame() {
-        this.mockLoonGenerator()
+        this.mockLoonGenerator();
         if (this.scene.get('GamePanel')) {
             // Start the existing scene
             this.scene.start('GamePanel');
@@ -100,43 +110,48 @@ class Game extends Phaser.Scene {
         }
     }
 
+    update() {
+        // let loons = this.registry.get(loonsKey);
+        // loons.forEach((value, id) => {
+        //     if(value.active) {
+        //         this.updateBalloonPositions({id: id, position: value.position});
+        //     }
+        // });
+    }
+
     destroy() {
         this.events.off('createDraggableTurret', this.createDraggableTurret, this);
+        this.registry.events.on('changedata', this.onRegistryChange, this);
     }
 
     mockLoonGenerator() {
-        for(let id = 0; id < 10; id++) {
+        for (let id = 0; id < 100; id++) {
             let position = this.getRandomLocation();
-            this.updateBalloonPositions({id: id, position: position});
+            this.updateBalloonPositions({ id: id, position: position });
         }
     }
 
     getRandomLocation() {
-        const x = Phaser.Math.Between(0, this.sys.game.config.width);
-        const y = Phaser.Math.Between(0, this.sys.game.config.height);
+        const x = Phaser.Math.Between(0, gameWidth);
+        const y = Phaser.Math.Between(0, gameHeight);
         return new Position(x, y);
     }
 
-    clearLoons() {
-        for (let id in this.loons) {
-            if (this.loons.hasOwnProperty(id)) {
-                this.loons[id].destroy();
-            }
-        }
-        this.loons = {};
-    }
-
+    // gets triggered when the game deletes the loon and it goes out of bounds
     clearLoon(id) {
-        if (this.loons.hasOwnProperty(id)) {
-            this.loons[id].destroy();
-            // updating loons in global registry
-            this.registry.set('loons', this.loons);
+        let loon = this.loons.get(id);
+        if (loon) {
+            loon.destroy();
         }
+        this.loons.delete(id);
+        this.registry.set('loons', this.loons);
     }
 
     createLoon(id, position) {
         let loon = new Loon(this, id, position, this.getLoonType())
-        this.loons[id] = loon;
+        this.loons.set(id, loon);
+        // adding to the physics group to enable collision
+        this.loonsGroup.add(loon);
         // updating register
         this.registry.set('loons', this.loons);
     }
@@ -146,15 +161,19 @@ class Game extends Phaser.Scene {
     }
 
     updateBalloonPositions(newLoonData) {
-        // making the loons dissapear once below a threshold
-        if (newLoonData.position.x <= this.loonDissapearingCutOff) {
-            this.clearLoon(newLoonData.id);
-            this.loonDissapearingCutOff = Math.min(this.loonDissapearingCutOff, newLoonData.position.x);
-        }
-        let position = this.convertToPhaserCoordinates(newLoonData);
+        let position = newLoonData.position;
 
-        if (this.loons[newLoonData.id]) {
-            this.loons[newLoonData.id].updatePosition(position);
+        // out of bounds check
+        if (position.x <= this.loonDissapearingCutOff || position.y <= this.loonDissapearingCutOff
+            || position.x >= (gameWidth - this.loonDissapearingCutOff 
+                || position.y >= (gameHeight - this.loonDissapearingCutOff))) {
+            this.clearLoon(newLoonData.id);
+            // readjusting cutoff currently on the basis of minimum values in each wave
+            this.loonDissapearingCutOff = Math.min(this.loonDissapearingCutOff, position.x, position.y);
+        }
+
+        if (this.loons.has(newLoonData.id)) {
+            this.loons.get(newLoonData.id).updatePosition(position);
         } else {
             this.createLoon(newLoonData.id, position);
         }
@@ -166,22 +185,12 @@ class Game extends Phaser.Scene {
         const scaleY = gameHeight / 200;
 
         // Translate and scale the coordinates
-        const x = (loon.position.x+ 10);
+        const x = (loon.position.x + 10);
         const y = (loon.position.y + 100);
 
         return new Position(x, y);
     }
 }
 
-const config = {
-    type: Phaser.AUTO,
-    width: gameWidth,
-    height: gameHeight,
-    scene: [
-        Game
-    ]
-};
 
-const game = new Phaser.Game(config);
-
-export default game;
+export default Game;

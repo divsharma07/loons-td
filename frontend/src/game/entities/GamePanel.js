@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import Turret from './Turret';
 import Position from './Position';
 
+
 const turretsKey = 'turrets';
 class GamePanel extends Phaser.Scene {
     turretAllocation = [
@@ -15,7 +16,6 @@ class GamePanel extends Phaser.Scene {
 
     create() {
         this.turretSprites = this.registry.get(turretsKey)
-        // Panel creation code here
         const gameHeight = this.game.config.height;
         const panelHeight = 50;
         const panelWidth = this.game.config.width;
@@ -59,7 +59,6 @@ class GamePanel extends Phaser.Scene {
         countText.setVisible(true);
         // Store the text object in the sprite for easy access
         sprite.countText = countText;
-        console.log(countText);
         // container.add(countText);
     }
 
@@ -67,6 +66,7 @@ class GamePanel extends Phaser.Scene {
         this.turretAllocation.forEach((eachTurret, i) => {
             if (eachTurret.count <= 0) {
                 eachTurret.sprite.visible = false;
+                eachTurret.sprite.countText.setVisible(false);
             } else if (eachTurret.sprite.countText) {
                 eachTurret.sprite.countText.setText(eachTurret.count.toString());
             }

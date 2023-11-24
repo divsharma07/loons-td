@@ -2,8 +2,32 @@ import React, { useEffect, useState, useRef } from "react";
 import WebSocketService from "../services/WebSocketService";
 import Position from "../game/entities/Position";
 import Loon from "../game/entities/Loon";
-import game from "../game/entities/Game";
 import StartButton from "./StartButton";
+import Phaser from "phaser";
+import Game from "../game/entities/Game";
+
+const gameHeight = 500;
+const gameWidth = 500;
+const popLoonKey = 'popLoon'
+const config = {
+    type: Phaser.AUTO,
+    width: gameWidth,
+    height: gameHeight,
+    scene: [
+        Game
+    ],
+    physics: {
+        default: 'arcade',
+        arcade: {
+            gravity: { y: 0 }, // Example gravity setting
+            debug: false // Set to true to see physics debugging visuals
+        }
+    },
+};
+
+const game = new Phaser.Game(config);
+// configuring loon popping event
+
 
 const GameContainer = () => {
     const [socket, setSocket] = useState(null);
@@ -11,6 +35,11 @@ const GameContainer = () => {
     const [gameStarted, setGameStarted] = useState(false);
     let loonsMap = new Map();
     const phaserEl = useRef(null);
+
+    game.events.on(popLoonKey, popLoon);
+
+
+
 
     const startGame = () => {
         // Start the game logic
@@ -58,18 +87,17 @@ const GameContainer = () => {
 
         window.addEventListener('resize', resizeGame);
         let newSocket;
-        const closeSocket = () => {
-            if (newSocket && newSocket.connected()) {
-                newSocket.disconnect();
-            }
-        };
-        window.addEventListener('beforeunload', closeSocket);
+        // const closeSocket = () => {
+        //     if (newSocket && newSocket.connected()) {
+        //         newSocket.disconnect();
+        //     }
+        // };
+        // window.addEventListener('beforeunload', closeSocket);
 
         if (gameStarted) {
             const primaryScene = game.scene.getScene('Game');
             if (primaryScene !== null) {
                 primaryScene.startGame();
-                primaryScene.clearLoons();
             }
 
             if(socket) {
@@ -87,7 +115,6 @@ const GameContainer = () => {
                         setMessages((prevMessages) => [...prevMessages, newMessage]);
                     } else {
                         setMessages([]);
-                        clearLoons();
                         console.log("This wave is complete");
                     }
                 }
@@ -95,13 +122,12 @@ const GameContainer = () => {
         }
 
         return () => {
-            closeSocket();
+           // closeSocket();
             window.removeEventListener('resize', resizeGame);
         }
     }, [serverUrl, gameStarted, phaserEl]);
 
-
-    const popLoon = (loonId) => {
+    function popLoon(loonId) {
         const message = JSON.stringify({
             'publish': {
                 'popLoon': {
@@ -109,8 +135,11 @@ const GameContainer = () => {
                 }
             }
         });
-        socket.sendMessage(message);
+        if(socket) {
+            socket.sendMessage(message);
+        }
     };
+
 
     return <div id="phaser-container" ref={phaserEl} style={{ position: 'relative', width: '100%', height: '100%' }}>
         {!gameStarted && <StartButton onStart={startGame} />}

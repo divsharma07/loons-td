@@ -7,6 +7,7 @@ class Loon extends Phaser.GameObjects.Sprite {
         this.position = position;
         scene.add.existing(this);
         this.scene = scene;
+        this.scene.physics.add.existing(this);
         this.setScale(0.02);
     }
 
@@ -14,12 +15,6 @@ class Loon extends Phaser.GameObjects.Sprite {
         this.position = newPosition;
         if (this.sprite) {
             this.sprite.setPosition(newPosition.x, newPosition.y);
-        }
-    }
-
-    destroy() {
-        if (this.sprite) {
-            this.sprite.destroy();
         }
     }
 }
