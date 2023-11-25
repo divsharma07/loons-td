@@ -31,6 +31,9 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'channels',
+    'gameState',
+    'loonLocation',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -69,6 +72,18 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'loonsTd.wsgi.application'
 
+# Use channels for handling asynchronous requests
+ASGI_APPLICATION = 'loonsTd.routing.application'
+
+# Configure channel layer (using Redis in this example)
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [('127.0.0.1', 6379)],
+        },
+    },
+}
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
