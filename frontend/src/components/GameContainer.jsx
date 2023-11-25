@@ -62,11 +62,16 @@ const GameContainer = () => {
         let newSocket;
 
         const handleLoonUpdate = (loonStateUpdate) => {
-            for (const [id, eachLoon] of Object.entries(loonStateUpdate.loonState)) {
-                const scene = game.scene.getScene('Game');
-                if (scene !== null) {
-                    scene.updateBalloonPosition(eachLoon);
-                }
+            // for (const [id, eachLoon] of Object.entries(loonStateUpdate.loonState)) {
+            //     const scene = game.scene.getScene('Game');
+            //     if (scene !== null) {
+            //         scene.updateBalloonPosition(eachLoon);
+            //     }
+            // }
+
+            const scene = game.scene.getScene('Game');
+            if (scene && loonStateUpdate.loonState) {
+                scene.processLoonUpdates(loonStateUpdate.loonState);
             }
         }
         // const closeSocket = () => {
@@ -114,15 +119,19 @@ const GameContainer = () => {
                         }
                     }
                 });
+                console.log(`baloon ${loonId} is shot`)
                 if (socketRef.current) {
                     socketRef.current.sendMessage(message);
                 }
             };
         }
-        
+
 
         return () => {
             window.removeEventListener('resize', resizeGame);
+            if (socketRef.current) {
+                socketRef.current.disconnect();
+            }
         }
     }, [serverUrl, gameStarted, phaserEl]);
 

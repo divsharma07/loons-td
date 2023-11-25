@@ -9,6 +9,6 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'loonsTd.settings')
 application = ProtocolTypeRouter({
   "http": get_asgi_application(),
   "websocket": URLRouter(
-      loonLocation.routing.websocket_urlpatterns
+      loonLocation.routing.websocket_urlpatterns,
   ),
 })

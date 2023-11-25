@@ -7,7 +7,7 @@ const popLoonEventKey = 'popLoon'
  * Represents a Turret entity in the game.
  * @class
  * @extends Phaser.GameObjects.Sprite
- */
+*/
 class Turret extends Phaser.GameObjects.Sprite {
     /**
      * Creates a new Turret instance.
@@ -43,22 +43,42 @@ class Turret extends Phaser.GameObjects.Sprite {
         this.scene.physics.add.collider(this.bulletsGroup, this.loonsGroup, this.handleBulletLoonCollision, null, this);
     }
 
+    // /**
+    //  * Gets the loons from the registry.
+    //  * @returns {Map<number, Phaser.GameObjects.Sprite>} The loons Map.
+    //  */
+    // getLoons() {
+    //     return this.scene.registry.get(loonsKey);
+    // }
+
+    // /**
+    //  * Sets the loons in the registry.
+    //  * @param {Map<number, Phaser.GameObjects.Sprite>} loons - The loons Map to set.
+    //  */
+    // setLoons(loons) {
+    //     this.scene.registry.set(loonsKey, loons);
+    // }
+
     /**
-     * Gets the nearest loon to the Turret.
+     * Gets the ID of the nearest loon to the Turret.
      * @returns {number|null} The ID of the nearest loon, or null if no loons are present.
      */
     getNearestLoon() {
         let nearestDistance = Infinity;
         let nearestLoon = null;
-        let loons = this.scene.registry.get(loonsKey);
+        // let loons = this.getLoons()
+        let loons = this.loonsGroup.getChildren();
         if (loons) {
-            loons.forEach((loon, id) => {
+            for (let loon of loons) {
+                if (!loon.active) {
+                    continue;
+                }
                 let distance = Phaser.Math.Distance.Between(this.x, this.y, loon.x, loon.y);
                 if (distance < nearestDistance) {
                     nearestDistance = distance;
-                    nearestLoon = id;
+                    nearestLoon = loon;
                 }
-            });
+            }
         }
 
         return nearestLoon;
@@ -98,13 +118,11 @@ class Turret extends Phaser.GameObjects.Sprite {
      * @param {number} nearestLoon - The ID of the nearest loon.
      */
     launchBullet(nearestLoon) {
-        let loons = this.scene.registry.get(loonsKey);
-        let targetLoon = loons.get(nearestLoon);
         const bulletSpeed = 500; // Adjust speed as needed
         const bullet = new Bullet(this.scene, this.x, this.y, 'bullet');
         // adding to physics group to enable collision
         this.bulletsGroup.add(bullet);
-        bullet.moveToTarget(targetLoon.position.x, targetLoon.position.y, bulletSpeed);
+        bullet.moveToTarget(nearestLoon.position.x, nearestLoon.position.y, bulletSpeed);
     }
 
     /**
@@ -115,14 +133,16 @@ class Turret extends Phaser.GameObjects.Sprite {
     handleBulletLoonCollision(bullet, loon) {
         let id = loon.id;
 
-        // Delete the loon from the loons Map
-        let loons = this.scene.registry.get(loonsKey);
-        loons.delete(id);
-        loon.destroy();
-        bullet.destroy();
-        this.scene.game.events.emit(popLoonEventKey, id);
-        // updating global registry
-        this.scene.registry.set('loons', loons);
+        if (loon.active) {
+            this.loonsGroup.remove(loon, true);
+            // removing loon from physics group and also deleting it
+            this.scene.game.events.emit(popLoonEventKey, id);
+            bullet.destroy();
+        } else {
+            bullet.destroy();
+
+            console.log("loon inactive");
+        }
     }
 
     /**

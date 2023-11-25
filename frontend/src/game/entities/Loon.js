@@ -31,7 +31,7 @@ class Loon extends Phaser.GameObjects.Sprite {
      */
     updatePosition(newPosition) {
         this.position = newPosition;
-        if (this) {
+        if (this && this.active) {
             this.setPosition(newPosition.x, newPosition.y);
         }
     }

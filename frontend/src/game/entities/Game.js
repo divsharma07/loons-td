@@ -4,6 +4,7 @@ import Position from './Position';
 import Loon from './Loon';
 import Turret from './Turret';
 
+const loonsKey = 'loons';
 /**
  * Represents the game scene in the Loons TD game.
  */
@@ -18,8 +19,15 @@ class Game extends Phaser.Scene {
         this.loonSprites = ["b1"];
         this.turretSprites = ["t1", "t2"];
         this.activeTurrets = [];
-        this.loons = new Map();
     }
+
+    // getLoons() {
+    //     return this.registry.get(loonsKey);
+    // }
+
+    // setLoons(loons) {
+    //     this.registry.set(loonsKey, loons);
+    // }
 
     /**
      * Preloads all the assets required for the game.
@@ -46,7 +54,7 @@ class Game extends Phaser.Scene {
     create() {
         this.registry.set('turrets', this.turretSprites);
         this.registry.set('loonSprites', this.loonSprites);
-        this.registry.set('loons', this.loons);
+        // this.setLoons(new Map());
         // subscribe to turret dragging event
 
         // Create a physics group for loons
@@ -150,18 +158,18 @@ class Game extends Phaser.Scene {
         return new Position(x, y);
     }
 
-    /**
-     * Clears a loon from the game.
-     * @param {number} id - The ID of the loon to be cleared.
-     */
-    clearLoon(id) {
-        let loon = this.loons.get(id);
-        if (loon) {
-            loon.destroy();
-        }
-        this.loons.delete(id);
-        this.registry.set('loons', this.loons);
-    }
+    // /**
+    //  * Clears a loon from the game.
+    //  * @param {number} id - The ID of the loon to be cleared.
+    //  */
+    // clearLoon(id) {
+    //     let loon = this.loons.get(id);
+    //     if (loon) {
+    //         loon.destroy();
+    //     }
+    //     this.loons.delete(id);
+    //     this.registry.set('loons', this.loons);
+    // }
 
     /**
      * Creates a new loon in the game.
@@ -170,11 +178,12 @@ class Game extends Phaser.Scene {
      */
     createLoon(id, position) {
         let loon = new Loon(this, id, position, this.getLoonType())
-        this.loons.set(id, loon);
+        // let loons = this.getLoons();
+        // loons.set(id, loon);
         // adding to the physics group to enable collision
         this.loonsGroup.add(loon);
         // updating register
-        this.registry.set('loons', this.loons);
+        // this.setLoons(loons);
     }
 
     /**
@@ -185,29 +194,41 @@ class Game extends Phaser.Scene {
         return "b1";
     }
 
-    /**
-     * Updates the position of a balloon in the game.
-     * @param {Object} newLoonData - The new loon data containing the ID and position.
-     */
-    updateBalloonPosition(newLoonData) {
-        let position = new Position(newLoonData.position_x, newLoonData.position_y);
+    processLoonUpdates(loonStateUpdate) {
+        this.loonsGroup.clear(true, true);
+        loonStateUpdate.forEach((newLoonData) => {
+            let position = new Position(newLoonData.position_x, newLoonData.position_y);
 
-
-        // out of bounds check
-        if (position.x <= this.loonDissapearingCutOff || position.y <= this.loonDissapearingCutOff
-            || position.x >= (this.gameWidth - this.loonDissapearingCutOff 
-                || position.y >= (this.gameHeight - this.loonDissapearingCutOff))) {
-            this.clearLoon(newLoonData.id);
-            // readjusting cutoff currently on the basis of minimum values in each wave
-            this.loonDissapearingCutOff = Math.min(this.loonDissapearingCutOff, position.x, position.y);
-        }
-
-        if (this.loons.has(newLoonData.id)) {
-            this.loons.get(newLoonData.id).updatePosition(position);
-        } else {
-            this.createLoon(newLoonData.id, position);
-        }
+            // out of bounds check
+            if (position.x <= this.loonDissapearingCutOff || position.y <= this.loonDissapearingCutOff
+                || position.x >= (this.game.gameWidth - this.loonDissapearingCutOff) 
+                    || position.y >= (this.game.gameHeight - this.loonDissapearingCutOff)) {
+                // readjusting cutoff currently on the basis of minimum values in each wave
+                this.loonDissapearingCutOff = Math.min(this.loonDissapearingCutOff, position.x, position.y);
+            } else {
+                this.createLoon(newLoonData.id, position);
+            }
+        });
     }
+
+    // /**
+    //  * Updates the position of a balloon in the game.
+    //  * @param {Object} newLoonData - The new loon data containing the ID and position.
+    //  */
+    // updateBalloonPosition(newLoonData) {
+    //     let position = new Position(newLoonData.position_x, newLoonData.position_y);
+
+    //     // out of bounds check
+    //     if (position.x <= this.loonDissapearingCutOff || position.y <= this.loonDissapearingCutOff
+    //         || position.x >= (this.gameWidth - this.loonDissapearingCutOff 
+    //             || position.y >= (this.gameHeight - this.loonDissapearingCutOff))) {
+    //         this.clearLoon(newLoonData.id);
+    //         // readjusting cutoff currently on the basis of minimum values in each wave
+    //         this.loonDissapearingCutOff = Math.min(this.loonDissapearingCutOff, position.x, position.y);
+    //     }
+        
+    //     this.createLoon(newLoonData.id, position);
+    // }
 
     /**
      * Converts the loon coordinates from server data to Phaser coordinates.
