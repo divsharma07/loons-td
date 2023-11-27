@@ -1,14 +1,15 @@
 # asgi.py
-
 import os
-from django.core.asgi import get_asgi_application
 from channels.routing import ProtocolTypeRouter, URLRouter
-import loonLocation.routing;
+from django.urls import path
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'loonsTd.settings')
+from django.core.asgi import get_asgi_application
+
+from gameState import consumers
 
 application = ProtocolTypeRouter({
   "http": get_asgi_application(),
   "websocket": URLRouter(
-      loonLocation.routing.websocket_urlpatterns,
+    [path('ws/loonsLocation/', consumers.LoonConsumer.as_asgi())]
   ),
 })

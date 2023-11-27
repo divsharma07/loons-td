@@ -121,3 +121,9 @@ class LoonWave:
                     return False
 
         return True
+
+    def is_loon_present(self, loon_id):
+        """
+        Check if a loon with the given ID is present.
+        """
+        return loon_id in self.loons

@@ -1,13 +1,15 @@
 # consumers.py
 import asyncio
+from asgiref.sync import sync_to_async
 from .loon_logic import LoonWave
 from channels.generic.websocket import AsyncWebsocketConsumer
 import copy
 import json
 import random
+from .services import PlayerService
 
 NUM_LOONS = 15
-BASE_START_POINT = (400, 400)  # replace with your actual base start point
+BASE_START_POINT = (800, 500)  # replace with your actual base start point
 START_POINT_RANGE = 50
 END_POINT = (0, 0)
 BATCH_RANGE = 4
@@ -16,6 +18,10 @@ BATCH_RANGE = 4
 class LoonConsumer(AsyncWebsocketConsumer):
     """
     WebSocket consumer for handling Loon updates.
+
+    Attributes:
+        lock (asyncio.Lock): A lock to ensure thread safety.
+        is_game_over (bool): Flag indicating if the game is over.
     """
 
     def __init__(self):
@@ -87,9 +93,12 @@ class LoonConsumer(AsyncWebsocketConsumer):
                     if batch_size <= NUM_LOONS:
                         batch_size += random.randint(0, 4)
                     # it is crucial to keep this low otherwise state data gets shared. Should be lower than shooting freq
-                    await asyncio.sleep(0.1)  # Update frequency
+                    await asyncio.sleep(0.05)  # Update frequency
 
     async def initialize_wave(self):
+        """
+        Initializes a new wave of Loons.
+        """
         self.loon_wave = LoonWave()
 
         # Example: Add a Loon
@@ -105,9 +114,33 @@ class LoonConsumer(AsyncWebsocketConsumer):
     async def receive(self, text_data):
         """
         Called when a WebSocket frame is received from the client.
+
+        Args:
+            text_data (str): The received text data.
         """
         async with self.lock:
-            print("\n delete loon " + text_data)
-            json_data = json.loads(text_data)
-            loon_id = json_data["publish"]["popLoon"]["loonId"]
-            await self.loon_wave.remove_loon(loon_id)
+            try:
+                json_data = json.loads(text_data)
+                
+                action = json_data['action']
+                player_id = json_data['playerId']
+                if action == 'popLoon':
+                    loon_id = json_data['loonId']
+
+                    if not self.is_loon_present(loon_id):
+                        await self.send(text_data=json.dumps({
+                            'error': 'Invalid action: No such loon'
+                        }))
+                    else:
+                        player_service = PlayerService()
+                        await player_service.increase_score(player_id, 1)
+                        await self.loon_wave.remove_loon(loon_id)
+            except Exception as e:
+                print(f"An error occurred while processing the received data: {e}")
+
+
+    def is_loon_present(self, loon_id):
+        """
+        Check if a loon with the given ID is present.
+        """
+        return self.loon_wave.is_loon_present(loon_id)

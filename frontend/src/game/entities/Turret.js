@@ -19,7 +19,7 @@ class Turret extends Phaser.GameObjects.Sprite {
      * @param {boolean} isActive - Indicates if the Turret is active.
      * @param {Phaser.Physics.Arcade.Group} loonsGroup - The group of loons in the game.
      */
-    constructor(scene, id, position, type, isActive, loonsGroup) {
+    constructor(scene, id, position, type, isActive, loonsGroup, playerId) {
         super(scene, position.x, position.y, type);
         this.id = id;
         this.level = TurretType[type];
@@ -29,6 +29,7 @@ class Turret extends Phaser.GameObjects.Sprite {
         this.scene = scene;
         this.dragging = true;
         this.loonsGroup = loonsGroup;
+        this.playerId = playerId;
         this.bulletsGroup = this.scene.physics.add.group({
             classType: Bullet,
         });
@@ -42,22 +43,6 @@ class Turret extends Phaser.GameObjects.Sprite {
         }
         this.scene.physics.add.collider(this.bulletsGroup, this.loonsGroup, this.handleBulletLoonCollision, null, this);
     }
-
-    // /**
-    //  * Gets the loons from the registry.
-    //  * @returns {Map<number, Phaser.GameObjects.Sprite>} The loons Map.
-    //  */
-    // getLoons() {
-    //     return this.scene.registry.get(loonsKey);
-    // }
-
-    // /**
-    //  * Sets the loons in the registry.
-    //  * @param {Map<number, Phaser.GameObjects.Sprite>} loons - The loons Map to set.
-    //  */
-    // setLoons(loons) {
-    //     this.scene.registry.set(loonsKey, loons);
-    // }
 
     /**
      * Gets the ID of the nearest loon to the Turret.
@@ -136,11 +121,10 @@ class Turret extends Phaser.GameObjects.Sprite {
         if (loon.active) {
             this.loonsGroup.remove(loon, true);
             // removing loon from physics group and also deleting it
-            this.scene.game.events.emit(popLoonEventKey, id);
+            this.scene.game.events.emit(popLoonEventKey, id, this.playerId);
             bullet.destroy();
         } else {
             bullet.destroy();
-
             console.log("loon inactive");
         }
     }
