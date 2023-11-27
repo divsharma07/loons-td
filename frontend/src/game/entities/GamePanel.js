@@ -2,9 +2,15 @@ import Phaser from 'phaser';
 import Turret from './Turret';
 import Position from './Position';
 
-
+/**
+ * Represents the game panel in the game scene.
+ */
 const turretsKey = 'turrets';
 class GamePanel extends Phaser.Scene {
+    /**
+     * Array that defines the allocation of turrets in the game panel.
+     * @type {Array<{type: string, count: string}>}
+     */
     turretAllocation = [
         { type: "t1", count: "3" },
         { type: "t2", count: "2" }
@@ -14,6 +20,9 @@ class GamePanel extends Phaser.Scene {
         super({ key: 'GamePanel' });
     }
 
+    /**
+     * Creates the game panel and its elements.
+     */
     create() {
         this.turretSprites = this.registry.get(turretsKey)
         const gameHeight = this.game.config.height;
@@ -48,6 +57,11 @@ class GamePanel extends Phaser.Scene {
         // Add UI elements to the panel
     }
 
+    /**
+     * Adds the count text to the turret sprite.
+     * @param {Phaser.GameObjects.Sprite} sprite - The turret sprite.
+     * @param {string} count - The count to display.
+     */
     addCountToSprite(sprite, count) {
         // let container = this.add.container(sprite.x, sprite.y);
         // container.add(sprite);
@@ -62,6 +76,9 @@ class GamePanel extends Phaser.Scene {
         // container.add(countText);
     }
 
+    /**
+     * Refreshes the visibility and count text of the turret icons.
+     */
     refreshTurretIcons() {
         this.turretAllocation.forEach((eachTurret, i) => {
             if (eachTurret.count <= 0) {

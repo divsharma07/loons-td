@@ -6,13 +6,15 @@ import StartButton from "./StartButton";
 import Phaser from "phaser";
 import Game from "../game/entities/Game";
 
-const gameHeight = 500;
-const gameWidth = 500;
+const gameHeight = 625;
+const gameWidth = 1200;
 const popLoonKey = 'popLoon'
 const config = {
     type: Phaser.AUTO,
     width: gameWidth,
     height: gameHeight,
+    pixelArt: true,
+    roundPixels: true,
     scene: [
         Game
     ],
@@ -24,57 +26,27 @@ const config = {
         }
     },
 };
-
 const game = new Phaser.Game(config);
 // configuring loon popping event
 
 
 const GameContainer = () => {
-    const [socket, setSocket] = useState(null);
-    const [messages, setMessages] = useState([]);
+    const socketRef = useRef(null);
     const [gameStarted, setGameStarted] = useState(false);
-    let loonsMap = new Map();
     const phaserEl = useRef(null);
+    const [playerId, setPlayerId] = useState(null);
+    const [initialCoins, setInitialCoins] = useState(null);
+    const [inventory, setInventory] = useState(null);
 
-    game.events.on(popLoonKey, popLoon);
-
-
+    // const email = 'sharmadivyanshu1996@gmail.com'; // Replace with your email
+    // const serverUrl = `wss://pronto-challenge.ngrok.app/${email}/ws`;
+    const serverUrl = 'ws://localhost:8000/ws/loonsLocation/'
 
 
     const startGame = () => {
         // Start the game logic
         setGameStarted(true);
     };
-
-    const email = 'sharmadivyanshu1996@gmail.com'; // Replace with your email
-    const serverUrl = `wss://pronto-challenge.ngrok.app/${email}/ws`;
-
-    const handleLoonUpdate = (loonStateUpdate) => {
-        for (const [id, eachLoon] of Object.entries(loonStateUpdate.loonState)) {
-
-            if (loonsMap.has(id)) {
-                // If the loon already exists, update it
-                loonsMap.get(id).updatePosition(new Position(eachLoon.position_x, eachLoon.position_y));
-            } else {
-                // If the loon doesn't exist, create a new one and add it to the map
-                const newLoon = new Loon(id, new Position(eachLoon.position_x, eachLoon.position_y));
-                loonsMap.set(id, newLoon);
-            }
-
-            const scene = game.scene.getScene('Game');
-            if (scene !== null) {
-                scene.updateBalloonPositions(loonsMap.get(id));
-            }
-        }
-    }
-
-    const clearLoons = () => {
-        loonsMap.clear();
-        const primaryScene = game.scene.getScene('Game');
-        if (primaryScene !== null) {
-            primaryScene.clearLoons();
-        }
-    }
 
     useEffect(() => {
         if (phaserEl.current && game.canvas) {
@@ -87,58 +59,83 @@ const GameContainer = () => {
 
         window.addEventListener('resize', resizeGame);
         let newSocket;
-        // const closeSocket = () => {
-        //     if (newSocket && newSocket.connected()) {
-        //         newSocket.disconnect();
-        //     }
-        // };
-        // window.addEventListener('beforeunload', closeSocket);
 
-        if (gameStarted) {
-            const primaryScene = game.scene.getScene('Game');
-            if (primaryScene !== null) {
-                primaryScene.startGame();
+        const handleLoonUpdate = (loonStateUpdate) => {
+            const scene = game.scene.getScene('Game');
+            if (scene && loonStateUpdate.loonState) {
+                scene.processLoonUpdates(loonStateUpdate.loonState);
             }
-
-            if(socket) {
-                newSocket = socket;
-            } else {
-                newSocket = new WebSocketService(serverUrl);
-            }
-            setSocket(newSocket);
-            newSocket.connectAndSubscribe((event) => {
-                if (event.data) {
-                    const newMessage = JSON.parse(event.data);
-                    if (newMessage.loonState) {
-                        console.log(newMessage);
-                        handleLoonUpdate(newMessage);
-                        setMessages((prevMessages) => [...prevMessages, newMessage]);
-                    } else {
-                        setMessages([]);
-                        console.log("This wave is complete");
-                    }
-                }
-            });
         }
 
+
+        if (gameStarted) {
+            // fetching game config
+            fetch('http://localhost:8000/game/start')
+                .then(response => response.json())
+                .then(data => {
+                    // we only subscribe to the websocket server and do all the tasks if the call succeeds
+                    setPlayerId(data.player_id);
+                    setInitialCoins(data.game_config.game_settings.initial_coins);
+                    setInventory(data.game_config.game_settings.inventory);
+                    const primaryScene = game.scene.getScene('Game');
+                    if (primaryScene !== null) {
+                        primaryScene.startGame(data.player_id, data.game_config.game_settings.initial_coins, 
+                            data.game_config.game_settings.inventory);
+                    }
+                    console.log(data.player_id);
+                    // setting up event listener for popping loons
+                    game.events.on(popLoonKey, (loonId, playerId) => {
+                        popLoon(loonId, playerId);
+                    });
+
+
+                    // callback event that lets server know that a loon is popped
+                    // check handleBulletLoonCollision in Turret.js for usage
+                    const popLoon = (loonId, playerId) => {
+                        const message = JSON.stringify({
+                            'action': "popLoon",
+                            'loonId': loonId,
+                            'playerId': playerId
+                        });
+                        console.log(`baloon ${loonId} is shot`)
+                        if (socketRef.current) {
+                            socketRef.current.sendMessage(message);
+                        }
+                    };
+
+
+                    // reusuing the socket conneciton if available
+                    if (socketRef.current) {
+                        newSocket = socketRef.current;
+                    } else {
+                        newSocket = new WebSocketService(serverUrl);
+                    }
+                    socketRef.current = newSocket;
+
+                    newSocket.connectAndSubscribe((event) => {
+                        if (event.data) {
+                            const newMessage = JSON.parse(event.data);
+                            if (newMessage.loonState) {
+                                console.log(newMessage);
+                                handleLoonUpdate(newMessage);
+                            } else {
+                                console.log("This wave is complete");
+                            }
+                        }
+                    });
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+
         return () => {
-           // closeSocket();
             window.removeEventListener('resize', resizeGame);
+            if (socketRef.current) {
+                socketRef.current.disconnect();
+            }
         }
     }, [serverUrl, gameStarted, phaserEl]);
 
-    function popLoon(loonId) {
-        const message = JSON.stringify({
-            'publish': {
-                'popLoon': {
-                    'loonId': loonId
-                }
-            }
-        });
-        if(socket) {
-            socket.sendMessage(message);
-        }
-    };
 
 
     return <div id="phaser-container" ref={phaserEl} style={{ position: 'relative', width: '100%', height: '100%' }}>

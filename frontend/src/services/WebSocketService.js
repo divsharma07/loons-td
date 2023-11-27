@@ -7,8 +7,8 @@ class WebSocketService {
     connectAndSubscribe(onMessage) {
         this.socket.onopen = () => {
             console.log('Connected to the server');
-            this.socket.send(JSON.stringify({ 'subscribe': 'msg' }));
-            this.socket.send(JSON.stringify({ 'subscribe': 'loonState' }));
+            // this.socket.send(JSON.stringify({ 'subscribe': 'msg' }));
+            // this.socket.send(JSON.stringify({ 'subscribe': 'loonState' }));
         };
 
         this.socket.onmessage = (event) => {

@@ -1,0 +1,15 @@
+{
+    "game_settings": {
+        "initial_coins": 400,
+        "inventory": [
+            {
+                "name": "BasicTurret",
+                "count": 1
+            },
+            {
+                "name": "AdvancedTurret",
+                "count": 1
+            }
+        ]
+    }
+}
