@@ -43,14 +43,14 @@ class Turret extends Phaser.GameObjects.Sprite {
             });
         }
         if (isOnPanel) {
-            this.plusButton = this.scene.add.image(position.x-5, position.y - 20, 'plusButton');
+            this.plusButton = this.scene.add.image(position.x - 5, position.y - 20, 'plusButton');
             this.plusButton.setInteractive();
             this.plusButton.setScale(0.08);
             this.plusButton.on('pointerdown', () => this.buyItem());
         }
         this.scene.physics.add.collider(this.bulletsGroup, this.loonsGroup, this.handleBulletLoonCollision, null, this);
     }
-    
+
     /**
      * Buys the item associated with the Turret.
      * Makes a server call to buy the item and updates the game inventory.
@@ -68,18 +68,18 @@ class Turret extends Phaser.GameObjects.Sprite {
                 'Content-Type': 'application/json',
             },
         })
-        .then(response => response.json())
-        .then(data => {
-            this.scene.game.events.emit(refreshItemsKey, data.inventory);
-            this.scene.game.events.emit(coinUpdateKey, data.coins);
-        })
-        .catch((error) => {
-          console.error('Error:', error);
-        });
+            .then(response => response.json())
+            .then(data => {
+                this.scene.game.events.emit(refreshItemsKey, data.inventory);
+                this.scene.game.events.emit(coinUpdateKey, data.coins);
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
     }
 
     /**
-     * Gets the ID of the nearest loon to the Turret.
+     * Gets the ID of the nearest loon to the Turret that is equal or lower in level.
      * @returns {number|null} The ID of the nearest loon, or null if no loons are present.
      */
     getNearestLoon() {
@@ -93,7 +93,7 @@ class Turret extends Phaser.GameObjects.Sprite {
                     continue;
                 }
                 let distance = Phaser.Math.Distance.Between(this.x, this.y, loon.x, loon.y);
-                if (distance < nearestDistance) {
+                if (distance < nearestDistance && loon.level <= this.level) {
                     nearestDistance = distance;
                     nearestLoon = loon;
                 }
@@ -138,7 +138,7 @@ class Turret extends Phaser.GameObjects.Sprite {
      */
     launchBullet(nearestLoon) {
         const bulletSpeed = 500; // Adjust speed as needed
-        const bullet = new Bullet(this.scene, this.x, this.y, 'bullet');
+        const bullet = new Bullet(this.scene, this.x, this.y, 'bullet', this.level);
         // adding to physics group to enable collision
         this.bulletsGroup.add(bullet);
         bullet.moveToTarget(nearestLoon.position.x, nearestLoon.position.y, bulletSpeed);
@@ -152,10 +152,12 @@ class Turret extends Phaser.GameObjects.Sprite {
     handleBulletLoonCollision(bullet, loon) {
         let id = loon.id;
 
-        if (loon.active) {
-            this.loonsGroup.remove(loon, true);
+        // designing such that a higher level turret can shoot a lower level loon
+        if (loon.active && loon.level <= bullet.level) {
             // removing loon from physics group and also deleting it
-            this.scene.game.events.emit(popLoonEventKey, id, this.playerId);
+            this.loonsGroup.remove(loon, true);
+            // also doing server side check related to loon and weapon levels so sending level data
+            this.scene.game.events.emit(popLoonEventKey, id, bullet.level, loon.level, this.playerId);
             bullet.destroy();
         } else {
             bullet.destroy();

@@ -128,10 +128,8 @@ class LoonConsumer(AsyncWebsocketConsumer):
                 + random.uniform(-start_point_range, start_point_range),
             ]
             loon_type = random.choices(
-                [LoonType.BasicLoon, LoonType.AdvancedLoon],
-                weights=[0.9, 0.1],
-                k=1
-                )[0]
+                [LoonType.BasicLoon, LoonType.AdvancedLoon], weights=[0.9, 0.1], k=1
+            )[0]
             await self.loon_wave.add_loon(start_point, end_point, loon_type.value)
 
     async def receive(self, text_data):
@@ -146,18 +144,33 @@ class LoonConsumer(AsyncWebsocketConsumer):
                 json_data = json.loads(text_data)
 
                 action = json_data["action"]
-                player_id = json_data["playerId"]
-                if action == "popLoon":
-                    loon_id = json_data["loonId"]
+                if action != "popLoon":
+                    return
 
-                    if not self.is_loon_present(loon_id):
-                        await self.send(
-                            text_data=json.dumps(
-                                {"error": "Invalid action: No such loon"}
-                            )
+                loon_id = json_data["loonId"]
+
+                if not self.is_loon_present(loon_id):
+                    await self.send(
+                        text_data=json.dumps(
+                            {"error": "Invalid action: No such loon"}
                         )
-                    else:
-                        await self.loon_wave.remove_loon(loon_id)
+                    )
+                    return
+
+                if (
+                    "loonLevel" in json_data
+                    and "itemLevel" in json_data
+                    and int(json_data["bulletLevel"])
+                    < int(json_data["bulletLevel"])
+                ):
+                    await self.send(
+                        text_data=json.dumps(
+                            {"error": "Invalid action: Level is not enough"}
+                        )
+                    )
+                    return
+
+                await self.loon_wave.remove_loon(loon_id)
             except Exception as e:
                 print(f"An error occurred while processing the received data: {e}")
 

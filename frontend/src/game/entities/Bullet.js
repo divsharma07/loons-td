@@ -14,13 +14,14 @@ class Bullet extends Phaser.GameObjects.Sprite {
      * @param {number} y - The y-coordinate of the bullet's initial position.
      * @param {string} texture - The texture key of the bullet.
      */
-    constructor(scene, x, y, texture) {
+    constructor(scene, x, y, texture, level) {
         super(scene, x, y, texture);
         this.scene = scene;
         this.setScale(0.02);
         this.scene.add.existing(this);
         this.scene.physics.add.existing(this);
         this.body.setVelocity(200, 0);
+        this.level = level;
     }
 
     /**

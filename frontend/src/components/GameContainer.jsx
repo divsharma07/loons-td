@@ -94,10 +94,12 @@ const GameContainer = () => {
 
                     // callback event that lets server know that a loon is popped
                     // check handleBulletLoonCollision in Turret.js for usage
-                    const popLoon = (loonId, playerId) => {
+                    const popLoon = (loonId,bulletLevel, loonLevel, playerId) => {
                         const message = JSON.stringify({
                             'action': "popLoon",
                             'loonId': loonId,
+                            'itemLevel': bulletLevel,
+                            'loonLevel': loonLevel,
                             'playerId': playerId
                         });
                         console.log(`baloon ${loonId} is shot`)
