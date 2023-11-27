@@ -1,5 +1,8 @@
 from asgiref.sync import sync_to_async
 from django.db.models import F
+from django.core.exceptions import ValidationError
+
+
 class PlayerService:
     def create_player(self, id, initial_coins, inventory):
         """
@@ -23,16 +26,75 @@ class PlayerService:
         # Add items to the player's inventory
         for each_item in inventory:
             try:
-                item = Item.objects.get(name=each_item["name"])
+                item = Item.objects.get(name=each_item["item_name"])
             except Item.DoesNotExist:
                 raise Item.DoesNotExist(
-                    "Item with name {} does not exist".format(each_item["name"])
+                    "Item with name {} does not exist".format(each_item["item_name"])
                 )
 
             Inventory.objects.create(
-                player=player, item=item, quantity=each_item["count"]
+                player=player, item=item, quantity=each_item["quantity"]
             )
         return player
+
+    def get_inventory(self, player_id):
+        from .models import Inventory
+
+        inventory_items = Inventory.objects.filter(player_id=player_id)
+        return [self._serialize_inventory_item(item) for item in inventory_items]
+
+    def _serialize_inventory_item(self, inventory_item):
+        return {
+            "item_id": inventory_item.item.id,
+            "item_name": inventory_item.item.name,
+            "quantity": inventory_item.quantity,
+        }
+
+
+    async def add_coins(self, player_id, coins):
+        """
+        Add a certain number of coins to the player with the given ID.
+
+        Args:
+            player_id (int): The ID of the player.
+            coins (int): The number of coins to add.
+
+        Returns:
+            int: The new number of coins for the player.
+        """
+        from .models import Player
+        from django.db.models import F
+
+        try:
+            player = await sync_to_async(Player.objects.get)(id=player_id)
+            player.coins = F("coins") + coins
+            await sync_to_async(player.save)()
+            await sync_to_async(player.refresh_from_db)()
+            coins = await sync_to_async(getattr, thread_sensitive=True)(player, 'coins')
+
+            return coins
+        except Player.DoesNotExist:
+            raise ValueError("Player with ID {} does not exist".format(player_id))
+
+
+    def get_coins(self, player_id):
+        """
+        Get the number of coins for the player with the given ID.
+
+        Args:
+            player_id (int): The ID of the player.
+
+        Returns:
+            int: The number of coins for the player.
+        """
+        from .models import Player
+
+        try:
+            player = Player.objects.get(id=player_id)
+            return player.coins
+        except Player.DoesNotExist:
+            raise ValueError("Player with ID {} does not exist".format(player_id))
+
 
     async def increase_score(self, player_id, amount):
         """
@@ -48,6 +110,7 @@ class PlayerService:
             player = await sync_to_async(Player.objects.get)(id=player_id)
             player.score += amount
             await sync_to_async(player.save)()
+            return player.score
         except Player.DoesNotExist:
             raise Player.DoesNotExist(
                 "Player with id {} does not exist".format(player_id)
@@ -76,7 +139,7 @@ class PlayerService:
             )
         try:
             player = Player.objects.get(id=player_id)
-        except Player.DoesNotExist:
+        except Player.DoesNotExist or ValidationError:
             raise Player.DoesNotExist(
                 "Player with id {} does not exist".format(player_id)
             )
@@ -87,16 +150,53 @@ class PlayerService:
             )
 
         try:
-            inventory_item = Inventory.objects.get(player=player, item = item)
-            inventory_item.quantity = F('quantity') + 1
+            inventory_item = Inventory.objects.get(player=player, item=item)
+            inventory_item.quantity = F("quantity") + 1
             inventory_item.save()
         except Inventory.DoesNotExist:
             player.inventory.create(item=item, quantity=1)
         player.coins -= item.cost
         player.save()
 
+    def use_item(self, player_id, item_name):
+        from .models import Inventory, Item, Player
+
+        try:
+            item = Item.objects.get(name=item_name)
+        except Item.DoesNotExist:
+            raise Item.DoesNotExist(
+                "Item with name {} does not exist".format(item_name)
+            )
+
+        try:
+            player = Player.objects.get(id=player_id)
+        except Player.DoesNotExist or ValidationError:
+            raise Player.DoesNotExist(
+                "Player with id {} does not exist".format(player_id)
+            )
+        try:
+            inventory_item = Inventory.objects.get(player=player, item=item)
+            if inventory_item.quantity <= 0:
+                raise InsufficientQuantityError("Insufficient quantity of item")
+            inventory_item.quantity -= 1
+            inventory_item.save()
+        except Inventory.DoesNotExist:
+            raise ItemNotFoundError("Item not found in inventory")
+
 
 class InsufficientFundsError(Exception):
     """Raised when a player does not have enough funds to buy the item."""
+
+    pass
+
+
+class InsufficientQuantityError(Exception):
+    """Raised when a player does not have item left."""
+
+    pass
+
+
+class ItemNotFoundError(Exception):
+    """Item not found"""
 
     pass

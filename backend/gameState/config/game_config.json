@@ -3,12 +3,12 @@
         "initial_coins": 400,
         "inventory": [
             {
-                "name": "BasicTurret",
-                "count": 1
+                "item_name": "BasicTurret",
+                "quantity": 1
             },
             {
-                "name": "AdvancedTurret",
-                "count": 1
+                "item_name": "AdvancedTurret",
+                "quantity": 1
             }
         ]
     }

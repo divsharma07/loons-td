@@ -9,6 +9,9 @@ import Game from "../game/entities/Game";
 const gameHeight = 625;
 const gameWidth = 1200;
 const popLoonKey = 'popLoon'
+const scoreUpdateKey = 'scoreUpdate'
+const coinUpdateKey = 'coinUpdate'
+
 const config = {
     type: Phaser.AUTO,
     width: gameWidth,
@@ -40,7 +43,7 @@ const GameContainer = () => {
 
     // const email = 'sharmadivyanshu1996@gmail.com'; // Replace with your email
     // const serverUrl = `wss://pronto-challenge.ngrok.app/${email}/ws`;
-    const serverUrl = 'ws://localhost:8000/ws/loonsLocation/'
+    // const serverUrl = `ws://localhost:8000/ws/loonsLocation/${playerId}`
 
 
     const startGame = () => {
@@ -102,7 +105,7 @@ const GameContainer = () => {
                             socketRef.current.sendMessage(message);
                         }
                     };
-
+                    const serverUrl = `ws://localhost:8000/ws/loonsLocation/${data.player_id}/`
 
                     // reusuing the socket conneciton if available
                     if (socketRef.current) {
@@ -118,8 +121,18 @@ const GameContainer = () => {
                             if (newMessage.loonState) {
                                 console.log(newMessage);
                                 handleLoonUpdate(newMessage);
-                            } else {
-                                console.log("This wave is complete");
+                            } else if (newMessage.update) {
+                                // received score update from server and sent to GamePanel
+                                let update = newMessage.update
+                                if(update.score) {
+                                    game.events.emit(scoreUpdateKey, update.score); 
+                                }
+                                if(update.coins) {
+                                    game.events.emit(coinUpdateKey, update.coins); 
+                                }
+                                game.events.emit()
+                            } else if (newMessage.msg){
+
                             }
                         }
                     });
@@ -134,7 +147,7 @@ const GameContainer = () => {
                 socketRef.current.disconnect();
             }
         }
-    }, [serverUrl, gameStarted, phaserEl]);
+    }, [gameStarted, phaserEl]);
 
 
 

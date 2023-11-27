@@ -14,9 +14,8 @@ class Game extends Phaser.Scene {
     constructor() {
         super('Game');
         // initializing turrets and loons
-        this.loonSprites = ["b1"];
-        this.turretSprites = ["t1", "t2"];
-        this.activeTurrets = [];
+        this.loonSprites = ["BasicLoon", "AdvancedLoon"];
+        this.turretSprites = ["BasicTurret", "AdvancedTurret"];
     }
 
     /**
@@ -36,6 +35,8 @@ class Game extends Phaser.Scene {
         this.turretSprites.forEach((turret) => {
             this.load.image(turret, `assets/${turret}.png`);
         });
+        // loading plus button
+        this.load.image("plusButton", "assets/plusButton.png");
     }
 
     /**
@@ -90,7 +91,6 @@ class Game extends Phaser.Scene {
         this.input.on('dragend', (pointer, gameObject) => {
             if (gameObject.isDragging()) {
                 // Finalize turret placement
-                this.activeTurrets.push(gameObject);
                 this.scene.bringToTop('GamePanel');
                 gameObject.setDragging(false);
                 // Optional: Snap turret to grid or validate position here
@@ -102,16 +102,16 @@ class Game extends Phaser.Scene {
      * Starts the game by either starting the existing GamePanel scene or adding and starting a new GamePanel scene.
      */
     startGame(playerId, initialCoins, inventory) {
+        this.playerId = playerId;
+        this.initialCoins = initialCoins;
+        this.inventory = inventory;
         if (this.scene.get('GamePanel')) {
             // Start the existing scene
             this.scene.start('GamePanel');
         } else {
             // Add and start the new scene
-            this.scene.add('GamePanel', GamePanel, true);
+            this.scene.add('GamePanel', new GamePanel(inventory, playerId, initialCoins), true);
         }
-        this.playerId = playerId;
-        this.initialCoins = initialCoins;
-        this.inventory = inventory;
     }
 
     /**
@@ -119,7 +119,6 @@ class Game extends Phaser.Scene {
      */
     destroy() {
         this.events.off('createDraggableTurret', this.createDraggableTurret, this);
-        this.registry.events.on('changedata', this.onRegistryChange, this);
     }
 
     /**
@@ -147,8 +146,8 @@ class Game extends Phaser.Scene {
      * @param {number} id - The ID of the loon.
      * @param {Position} position - The position of the loon.
      */
-    createLoon(id, position) {
-        let loon = new Loon(this, id, position, this.getLoonType())
+    createLoon(id, position, loonType) {
+        let loon = new Loon(this, id, position, loonType)
         // let loons = this.getLoons();
         // loons.set(id, loon);
         // adding to the physics group to enable collision
@@ -182,7 +181,7 @@ class Game extends Phaser.Scene {
                 // readjusting cutoff currently on the basis of minimum values in each wave
                 this.loonDissapearingCutOff = Math.min(this.loonDissapearingCutOff, position.x, position.y);
             } else {
-                this.createLoon(newLoonData.id, position);
+                this.createLoon(newLoonData.id, position, newLoonData.type);
             }
         });
     }

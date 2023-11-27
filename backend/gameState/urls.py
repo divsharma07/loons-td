@@ -5,7 +5,8 @@ from . import consumers
 urlpatterns = [
     # Define your HTTP routes here
     path('start/', views.StartGameView.as_view(), name='start'),
-    path('buy/', views.BuyItemView.as_view(), name='buy')
+    path('buy/', views.BuyItemView.as_view(), name='buy'),
+    path('use/', views.UseItemView.as_view(), name='useItem')
 ]
 
 websocket_urlpatterns = [

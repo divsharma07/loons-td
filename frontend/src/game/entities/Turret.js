@@ -1,8 +1,9 @@
 import Phaser from 'phaser';
 import Bullet from './Bullet';
 
-const loonsKey = 'loons';
 const popLoonEventKey = 'popLoon'
+const refreshItemsKey = 'refreshItems'
+const coinUpdateKey = 'coinUpdate'
 /**
  * Represents a Turret entity in the game.
  * @class
@@ -19,7 +20,7 @@ class Turret extends Phaser.GameObjects.Sprite {
      * @param {boolean} isActive - Indicates if the Turret is active.
      * @param {Phaser.Physics.Arcade.Group} loonsGroup - The group of loons in the game.
      */
-    constructor(scene, id, position, type, isActive, loonsGroup, playerId) {
+    constructor(scene, id, position, type, isActive, loonsGroup, playerId, isOnPanel) {
         super(scene, position.x, position.y, type);
         this.id = id;
         this.level = TurretType[type];
@@ -41,7 +42,40 @@ class Turret extends Phaser.GameObjects.Sprite {
                 loop: true
             });
         }
+        if (isOnPanel) {
+            this.plusButton = this.scene.add.image(position.x-5, position.y - 20, 'plusButton');
+            this.plusButton.setInteractive();
+            this.plusButton.setScale(0.08);
+            this.plusButton.on('pointerdown', () => this.buyItem());
+        }
         this.scene.physics.add.collider(this.bulletsGroup, this.loonsGroup, this.handleBulletLoonCollision, null, this);
+    }
+    
+    /**
+     * Buys the item associated with the Turret.
+     * Makes a server call to buy the item and updates the game inventory.
+     */
+    buyItem() {
+        // Replace with your actual server call
+        fetch('http://localhost:8000/game/buy/', {
+            method: 'POST',
+            body: JSON.stringify({
+                itemId: this.id,
+                playerId: this.playerId,
+                // Include any other data your server needs
+            }),
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            this.scene.game.events.emit(refreshItemsKey, data.inventory);
+            this.scene.game.events.emit(coinUpdateKey, data.coins);
+        })
+        .catch((error) => {
+          console.error('Error:', error);
+        });
     }
 
     /**
@@ -140,8 +174,8 @@ class Turret extends Phaser.GameObjects.Sprite {
 }
 
 const TurretType = {
-    t1: 1,
-    t2: 2
+    BasicTurret: 1,
+    AdvancedTurret: 2
 };
 
 export default Turret;
