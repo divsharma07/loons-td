@@ -1,9 +1,9 @@
 import random
 import asyncio
-
+from enum import Enum
 
 class Loon:
-    def __init__(self, loon_id, start_pos, end_pos):
+    def __init__(self, loon_id, start_pos, end_pos, loon_type_value):
         """
         Initialize a Loon object.
 
@@ -17,6 +17,8 @@ class Loon:
         self.end_pos = end_pos
         self.active = True
         self.lock = asyncio.Lock()
+        self.loon_type = LoonType(loon_type_value)
+        self.loon_level = loon_type_value
 
     async def move(self, delta_x, delta_y):
         """
@@ -47,12 +49,16 @@ class Loon:
     def __repr__(self):
         return f"Loon(id={self.loon_id}, active={self.active})\n"
 
+class LoonType(Enum):
+    BasicLoon = 1
+    AdvancedLoon = 2
 
 import asyncio
 import copy
 import random
 
 class LoonWave:
+    # LOON_DELTA stores the increase in coordinates
     LOON_DELTA = 2
 
     def __init__(self):
@@ -64,7 +70,7 @@ class LoonWave:
         async with self.lock:
             return self.loons
 
-    async def add_loon(self, start_pos, end_pos):
+    async def add_loon(self, start_pos, end_pos, loon_type_value):
         """
         Add a new loon to the wave.
 
@@ -73,7 +79,7 @@ class LoonWave:
             end_pos (tuple): The ending position of the loon.
         """
         async with self.lock:
-            loon = Loon(self.next_loon_id, start_pos, end_pos)
+            loon = Loon(self.next_loon_id, start_pos, end_pos, loon_type_value)
             self.loons[self.next_loon_id] = loon
             self.next_loon_id += 1
 

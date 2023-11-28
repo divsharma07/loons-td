@@ -1,18 +1,12 @@
 # consumers.py
 import asyncio
 from asgiref.sync import sync_to_async
-from .loon_logic import LoonWave
+from .loon_logic import LoonType, LoonWave
 from channels.generic.websocket import AsyncWebsocketConsumer
 import copy
 import json
 import random
 from .services import PlayerService
-
-NUM_LOONS = 15
-BASE_START_POINT = (800, 500)  # replace with your actual base start point
-START_POINT_RANGE = 50
-END_POINT = (0, 0)
-BATCH_RANGE = 4
 
 
 class LoonConsumer(AsyncWebsocketConsumer):
@@ -34,6 +28,7 @@ class LoonConsumer(AsyncWebsocketConsumer):
         Called when the WebSocket is handshaking as part of the connection process.
         """
         await self.accept()
+        self.player_id = self.scope["url_route"]["kwargs"]["player_id"]
 
         # Start the update loop
         asyncio.get_event_loop().create_task(self.send_loon_updates())
@@ -49,12 +44,18 @@ class LoonConsumer(AsyncWebsocketConsumer):
         """
         Sends Loon updates to the connected WebSocket client.
         """
+        num_loons = 15
+        base_start_point = (800, 500)  # replace with your actual base start point
+        start_point_range = 60
+        end_point = (0, 0)
         # sending infinite waves till a balloon goes out of
         while True:
             if self.is_game_over:
                 break
 
-            await self.initialize_wave()
+            await self.initialize_wave(
+                num_loons, base_start_point, start_point_range, end_point
+            )
             batch_size = 3
             while True:
                 async with self.lock:
@@ -62,8 +63,13 @@ class LoonConsumer(AsyncWebsocketConsumer):
 
                     if not succesful:
                         self.is_game_over = True
-                        data = {"msg": "Game Over"}
-                        await self.send(json.dumps(data))
+                        player_service = PlayerService()
+                        player = await player_service.game_over(self.player_id)
+                        data = {"msg": "Game Over", "score": player.score, "coins": player.coins}
+                        try:
+                            await self.send(json.dumps(data))
+                        except RuntimeError as e:
+                            print(f"An error occurred while sending data, websocet connection closed {e}")
                         break
 
                     # Prepare data for sending
@@ -79,6 +85,7 @@ class LoonConsumer(AsyncWebsocketConsumer):
                         "loonState": [
                             {
                                 "id": loon.loon_id,
+                                "type": loon.loon_type.name,
                                 "position_x": loon.current_pos[0],
                                 "position_y": loon.current_pos[1],
                             }
@@ -88,28 +95,53 @@ class LoonConsumer(AsyncWebsocketConsumer):
                         ]
                     }
 
-                    await self.send(json.dumps(data))
+                    try:
+                        await self.send(json.dumps(data))
+                    except RuntimeError as e:
+                        print(f"An error occurred while sending data: {e}")
 
-                    if batch_size <= NUM_LOONS:
+                    if batch_size <= num_loons:
                         batch_size += random.randint(0, 4)
                     # it is crucial to keep this low otherwise state data gets shared. Should be lower than shooting freq
                     await asyncio.sleep(0.05)  # Update frequency
 
-    async def initialize_wave(self):
+            # adding 1 score every time a wave is completed
+            # there are multiple ways of increasing coins but for now adding 500 coins after every 10 waves
+            player_service = PlayerService()
+            player_score = await player_service.increase_score(self.player_id, 1)
+            data = {"update": {"score": player_score}}
+            if player_score % 10 == 0:
+                coins = await player_service.add_coins(self.player_id, 500)
+                data["update"]["coins"] = str(coins)
+            try:
+                await self.send(json.dumps(data))
+            except RuntimeError as e:
+                print(f"An error occurred while sending data: {e}")
+
+            # increasing difficulty
+            start_point_range += 10
+            num_loons += 5
+
+    async def initialize_wave(
+        self, num_loons, base_start_point, start_point_range, end_point
+    ):
         """
         Initializes a new wave of Loons.
         """
         self.loon_wave = LoonWave()
 
         # Example: Add a Loon
-        for i in range(NUM_LOONS):
+        for i in range(num_loons):
             start_point = [
-                BASE_START_POINT[0]
-                + random.uniform(-START_POINT_RANGE, START_POINT_RANGE),
-                BASE_START_POINT[1]
-                + random.uniform(-START_POINT_RANGE, START_POINT_RANGE),
+                base_start_point[0]
+                + random.uniform(-start_point_range, start_point_range),
+                base_start_point[1]
+                + random.uniform(-start_point_range, start_point_range),
             ]
-            await self.loon_wave.add_loon(start_point, END_POINT)
+            loon_type = random.choices(
+                [LoonType.BasicLoon, LoonType.AdvancedLoon], weights=[0.9, 0.1], k=1
+            )[0]
+            await self.loon_wave.add_loon(start_point, end_point, loon_type.value)
 
     async def receive(self, text_data):
         """
@@ -121,23 +153,37 @@ class LoonConsumer(AsyncWebsocketConsumer):
         async with self.lock:
             try:
                 json_data = json.loads(text_data)
-                
-                action = json_data['action']
-                player_id = json_data['playerId']
-                if action == 'popLoon':
-                    loon_id = json_data['loonId']
 
-                    if not self.is_loon_present(loon_id):
-                        await self.send(text_data=json.dumps({
-                            'error': 'Invalid action: No such loon'
-                        }))
-                    else:
-                        player_service = PlayerService()
-                        await player_service.increase_score(player_id, 1)
-                        await self.loon_wave.remove_loon(loon_id)
+                action = json_data["action"]
+                if action != "popLoon":
+                    return
+
+                loon_id = json_data["loonId"]
+
+                if not self.is_loon_present(loon_id):
+                    await self.send(
+                        text_data=json.dumps(
+                            {"error": "Invalid action: No such loon"}
+                        )
+                    )
+                    return
+
+                if (
+                    "loonLevel" in json_data
+                    and "itemLevel" in json_data
+                    and int(json_data["bulletLevel"])
+                    < int(json_data["bulletLevel"])
+                ):
+                    await self.send(
+                        text_data=json.dumps(
+                            {"error": "Invalid action: Level is not enough"}
+                        )
+                    )
+                    return
+
+                await self.loon_wave.remove_loon(loon_id)
             except Exception as e:
                 print(f"An error occurred while processing the received data: {e}")
-
 
     def is_loon_present(self, loon_id):
         """

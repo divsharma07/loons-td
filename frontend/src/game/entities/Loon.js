@@ -22,7 +22,7 @@ class Loon extends Phaser.GameObjects.Sprite {
         scene.add.existing(this);
         this.scene = scene;
         this.scene.physics.add.existing(this);
-        this.setScale(0.02);
+        this.setScale(0.03);
     }
 
     /**
@@ -42,7 +42,8 @@ class Loon extends Phaser.GameObjects.Sprite {
  * @enum {number}
  */
 const LoonType = {
-    b1: 1,
+    BasicLoon: 1,
+    AdvancedLoon: 2
 };
 
 export default Loon;

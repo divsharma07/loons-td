@@ -20,11 +20,11 @@ class WebSocketService {
     }
 
     connected() {
-        return this.socket.connected;
+        return this.socket.readyState === WebSocket.OPEN;
     }
 
     sendMessage(message) {
-        if (this.socket.readyState === WebSocket.OPEN) {
+        if (this.connected()) {
             this.socket.send(message);
         }
     }

@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 import json
-from .services import InsufficientFundsError, PlayerService
+from .services import ItemNotFoundError, InsufficientQuantityError, InsufficientFundsError, PlayerService
 from django.conf import settings
 import uuid
 
@@ -41,7 +41,8 @@ class BuyItemView(APIView):
             format (str, optional): The format of the response. Defaults to None.
 
         Returns:
-            Response: The HTTP response indicating the success or failure of the item purchase.
+            Response: The HTTP response indicating the success or failure of the item purchase. Also the updated coins
+            and new inventory.
         """
         player_id = request.data.get('playerId')
         item_id = request.data.get('itemId')
@@ -51,7 +52,27 @@ class BuyItemView(APIView):
 
         player_service = PlayerService()
         try:
-            player_service.buy_item(player_id, item_id)
-            return Response({'message': 'Item bought successfully'}, status=status.HTTP_200_OK)
+            inventory_item = player_service.buy_item(player_id, item_id)
+            # inventory = player_service.get_inventory_item(player_id, item_id)
+            coins = player_service.get_coins(player_id)
+            return Response({'message': 'Item bought successfully', 'inventory_item': inventory_item, 'coins': coins}, status=status.HTTP_200_OK)
         except InsufficientFundsError:
             return Response({'message': 'Insufficient funds to buy item'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UseItemView(APIView):
+    def post(self, request):
+        player_id = request.data.get('playerId')
+        item_id = request.data.get('itemId')
+
+        if not player_id or not item_id:
+            return Response({'message': 'Missing playerId or itemId'}, status=status.HTTP_400_BAD_REQUEST)
+
+        player_service = PlayerService()
+        try:
+            player_service.use_item(player_id, item_id)
+            return Response({'message': 'Item used successfully'}, status=status.HTTP_200_OK)
+        except ItemNotFoundError:
+            return Response({'message': 'Item not found in inventory'}, status=status.HTTP_400_BAD_REQUEST)
+        except InsufficientQuantityError:
+            return Response({'message': 'Insufficient quantity of item'}, status=status.HTTP_400_BAD_REQUEST)
