@@ -76,39 +76,6 @@ class GamePanel extends Phaser.Scene {
     }
 
         /**
-     * Destroys the game panel and its elements.
-     * @method
-     */
-    destroy() {
-        // Remove event listeners
-        this.game.events.off(scoreUpdateKey, this.scoreUpdate, this);
-        this.game.events.off(coinUpdateKey, this.coinUpdate, this);
-
-        // Destroy text objects
-        if (this.scoreText) {
-            this.scoreText.destroy();
-        }
-        if (this.coinsText) {
-            this.coinsText.destroy();
-        }
-
-        // Destroy sprites and their countText objects
-        this.inventorySpritesMap.forEach((sprite, key) => {
-            if (sprite.countText) {
-                sprite.countText.destroy();
-            }
-            sprite.destroy();
-        });
-
-        // Clear the inventorySpritesMap
-        this.inventorySpritesMap.clear();
-
-        // Nullify the inventory
-        this.inventory = null;
-    }
-
-
-        /**
      * Picks an item from the inventory.
      * @method
      * @param {string} name - The name of the item.
@@ -151,8 +118,8 @@ class GamePanel extends Phaser.Scene {
      * @param {string} itemId - The ID of the item to use.
      */
     useItem(itemId) {
-        const buyUrl = `http://${serverAddr}/game/buy/`
-        fetch(buyUrl, {
+        const useUrl = `http://${serverAddr}/game/use/`
+        fetch(useUrl, {
             method: 'POST',
             body: JSON.stringify({
                 itemId: itemId,

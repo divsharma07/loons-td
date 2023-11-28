@@ -56,11 +56,10 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'loonsTd.urls'
 
-# TODO make this more restrictive
-# CORS_ALLOW_ALL_ORIGINS = True
-
+# TODO remove localhost later
 CORS_ALLOWED_ORIGINS = [
     "https://loons-td.netlify.app/",
+    "http://localhost:3000",
 ]
 
 TEMPLATES = [
