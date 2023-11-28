@@ -57,11 +57,11 @@ MIDDLEWARE = [
 ROOT_URLCONF = 'loonsTd.urls'
 
 # TODO make this more restrictive
-CORS_ALLOW_ALL_ORIGINS = True
+# CORS_ALLOW_ALL_ORIGINS = True
 
-# CORS_ALLOWED_ORIGINS = [
-#     "http://localhost:3000",
-# ]
+CORS_ALLOWED_ORIGINS = [
+    "https://loons-td.netlify.app/",
+]
 
 TEMPLATES = [
     {
@@ -85,11 +85,12 @@ WSGI_APPLICATION = 'loonsTd.wsgi.application'
 ASGI_APPLICATION = 'loonsTd.routing.application'
 
 # Configure channel layer (using Redis in this example)
+# keeping the redis server on the same host
 CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            "hosts": [('127.0.0.1', 6379)],
+            "hosts": [('redis', 6379)],
         },
     },
 }
