@@ -154,6 +154,7 @@ const GameContainer = () => {
                     });
                 } catch (error) {
                     setGameStarted(false);
+                    alert("Server Unavailable. Run it localy for now!!")
                     console.error('Failed to fetch game data:', error);
                 }
 
