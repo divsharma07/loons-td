@@ -8,7 +8,7 @@ class GameOver extends Phaser.Scene {
     }
 
     create() {
-        this.add.text(500, 250, `Game Over\nScore: ${this.score}\nCoins: ${this.coins}`, { fontSize: '32px', fill: '#000' });
+        this.add.text(300, 250, `Game Over\nScore: ${this.score}\nCoins: ${this.coins}`, { fontSize: '64px', fill: '#000' });
     }
 }
 

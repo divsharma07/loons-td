@@ -1,13 +1,11 @@
 import React, { useEffect, useState, useRef } from "react";
 import WebSocketService from "../services/WebSocketService";
-import Position from "../game/entities/Position";
-import Loon from "../game/entities/Loon";
 import StartButton from "./StartButton";
 import Phaser from "phaser";
 import Game from "../game/entities/Game";
 
-const gameHeight = 625;
-const gameWidth = 1200;
+const gameHeight = 600;
+const gameWidth = 1275;
 const popLoonKey = 'popLoon'
 const scoreUpdateKey = 'scoreUpdate'
 const coinUpdateKey = 'coinUpdate'
@@ -22,6 +20,7 @@ const config = {
     scene: [
         Game
     ],
+    antialias: true,
     physics: {
         default: 'arcade',
         arcade: {
@@ -50,8 +49,6 @@ const GameContainer = ({ onRestart }) => {
 
 
     useEffect(() => {
-        let newSocket;
-
         // Create a new game instance
         // const game = gameRef.current;
         if (gameStarted) {

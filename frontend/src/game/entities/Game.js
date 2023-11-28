@@ -5,11 +5,6 @@ import Position from './Position';
 import Loon from './Loon';
 import Turret from './Turret';
 
-
-const scoreUpdateKey = 'scoreUpdate'
-const refreshItemsKey = 'refreshItems'
-const coinUpdateKey = 'coinUpdate'
-
 /**
  * Represents the game scene in the Loons TD game.
  */

@@ -121,6 +121,8 @@ class LoonConsumer(AsyncWebsocketConsumer):
             # increasing difficulty
             start_point_range += 10
             num_loons += 5
+            # this essentially increases the movement of the loons
+            self.loon_wave.loon_delta += 1
 
     async def initialize_wave(
         self, num_loons, base_start_point, start_point_range, end_point
@@ -130,7 +132,6 @@ class LoonConsumer(AsyncWebsocketConsumer):
         """
         self.loon_wave = LoonWave()
 
-        # Example: Add a Loon
         for i in range(num_loons):
             start_point = [
                 base_start_point[0]
@@ -138,6 +139,8 @@ class LoonConsumer(AsyncWebsocketConsumer):
                 base_start_point[1]
                 + random.uniform(-start_point_range, start_point_range),
             ]
+            # chosen to use the random way of doing this, which does not guarantee 10% but is more extensible for later
+            #instead of just doing 1/10 of num_loons for AdvancedLoons
             loon_type = random.choices(
                 [LoonType.BasicLoon, LoonType.AdvancedLoon], weights=[0.9, 0.1], k=1
             )[0]

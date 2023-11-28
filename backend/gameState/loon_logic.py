@@ -58,8 +58,8 @@ import copy
 import random
 
 class LoonWave:
-    # LOON_DELTA stores the increase in coordinates
-    LOON_DELTA = 2
+    # LOON_DELTA stores the increase in coordinates essentially the speed of the loons
+    loon_delta = 2
 
     def __init__(self):
         self.loons = {}
@@ -119,8 +119,8 @@ class LoonWave:
             async with self.lock:
                 if not self.loons[loon_id].active:
                     continue
-                delta_x, delta_y = random.randint(0, self.LOON_DELTA), random.randint(
-                    0, self.LOON_DELTA
+                delta_x, delta_y = random.randint(0, self.loon_delta), random.randint(
+                    0, self.loon_delta
                 )
                 # returns false if any loon goes out of bounds
                 if not await self.loons[loon_id].move(delta_x, delta_y):

@@ -2,7 +2,6 @@ import Phaser from 'phaser';
 import Bullet from './Bullet';
 
 const popLoonEventKey = 'popLoon'
-const refreshItemKey = 'refreshItems'
 const coinUpdateKey = 'coinUpdate'
 /**
  * Represents a Turret entity in the game.

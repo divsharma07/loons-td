@@ -68,8 +68,8 @@ class GamePanel extends Phaser.Scene {
             }
         });
         const textSpacing = turretXStart + (this.inventory.length * turretSpacing);
-        this.scoreText = this.add.text(textSpacing, gameHeight - (panelHeight - 10), 'score: ' + this.score, { fontSize: '15px', fill: '#000' });
-        this.coinsText = this.add.text(textSpacing, gameHeight - (panelHeight - 30), 'coins: ' + this.coins, { fontSize: '15px', fill: '#000' });
+        this.scoreText = this.add.text(textSpacing, gameHeight - (panelHeight - 5), 'score: ' + this.score, { fontSize: '20px', fill: '#000' });
+        this.coinsText = this.add.text(textSpacing, gameHeight - (panelHeight - 25), 'coins: ' + this.coins, { fontSize: '20px', fill: '#000' });
         // Add UI elements to the panel
     }
 
