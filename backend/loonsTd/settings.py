@@ -58,7 +58,7 @@ ROOT_URLCONF = 'loonsTd.urls'
 
 # TODO remove localhost later
 CORS_ALLOWED_ORIGINS = [
-    "https://loons-td.netlify.app/",
+    "https://loons-td.netlify.app",
     "http://localhost:3000",
 ]
 

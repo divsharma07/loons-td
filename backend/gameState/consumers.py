@@ -1,9 +1,7 @@
 # consumers.py
 import asyncio
-from asgiref.sync import sync_to_async
 from .loon_logic import LoonType, LoonWave
 from channels.generic.websocket import AsyncWebsocketConsumer
-import copy
 import json
 import random
 from .services import PlayerService
@@ -49,80 +47,86 @@ class LoonConsumer(AsyncWebsocketConsumer):
         start_point_range = 60
         end_point = (0, 0)
         # sending infinite waves till a balloon goes out of
-        while True:
-            if self.is_game_over:
-                break
-
-            await self.initialize_wave(
-                num_loons, base_start_point, start_point_range, end_point
-            )
-            batch_size = 3
+        try:
             while True:
-                async with self.lock:
-                    succesful = await self.loon_wave.update_loons(batch_size)
+                if self.is_game_over:
+                    break
 
-                    if not succesful:
-                        self.is_game_over = True
-                        player_service = PlayerService()
-                        player = await player_service.game_over(self.player_id)
-                        data = {"msg": "Game Over", "score": player.score, "coins": player.coins}
+                await self.initialize_wave(
+                    num_loons, base_start_point, start_point_range, end_point
+                )
+                batch_size = 3
+                while True:
+                    async with self.lock:
+                        succesful = await self.loon_wave.update_loons(batch_size)
+
+                        if not succesful:
+                            self.is_game_over = True
+                            player_service = PlayerService()
+                            player = await player_service.game_over(self.player_id)
+                            data = {"msg": "Game Over", "score": player.score, "coins": player.coins}
+                            try:
+                                await self.send(json.dumps(data))
+                            except RuntimeError as e:
+                                print(f"An error occurred while sending data, websocet connection closed {e}")
+                                break
+
+                        # Prepare data for sending
+                        loon_batch = [
+                            loon for loon in self.loon_wave.loons.values() if loon.active
+                        ][:batch_size]
+
+                        # current wave is over
+                        if len(loon_batch) == 0:
+                            break
+
+                        data = {
+                            "loonState": [
+                                {
+                                    "id": loon.loon_id,
+                                    "type": loon.loon_type.name,
+                                    "position_x": loon.current_pos[0],
+                                    "position_y": loon.current_pos[1],
+                                }
+                                for loon in loon_batch
+                                if loon.active
+                                and loon in (await self.loon_wave.get_loons()).values()
+                            ]
+                        }
+
                         try:
                             await self.send(json.dumps(data))
                         except RuntimeError as e:
-                            print(f"An error occurred while sending data, websocet connection closed {e}")
-                        break
+                            print(f"An error occurred while sending data: {e}")
+                            raise WebSocketConnectionClosed()
 
-                    # Prepare data for sending
-                    loon_batch = [
-                        loon for loon in self.loon_wave.loons.values() if loon.active
-                    ][:batch_size]
+                        if batch_size <= num_loons:
+                            batch_size += random.randint(0, 4)
+                        # it is crucial to keep this low otherwise state data gets shared. Should be lower than shooting freq
+                        await asyncio.sleep(0.05)  # Update frequency
 
-                    # current wave is over
-                    if len(loon_batch) == 0:
-                        break
+                # adding 1 score every time a wave is completed
+                # there are multiple ways of increasing coins but for now adding 500 coins after every 10 waves
+                player_service = PlayerService()
+                player_score = await player_service.increase_score(self.player_id, 1)
+                data = {"update": {"score": player_score}}
+                if player_score % 10 == 0:
+                    coins = await player_service.add_coins(self.player_id, 500)
+                    data["update"]["coins"] = str(coins)
+                try:
+                    await self.send(json.dumps(data))
+                except RuntimeError as e:
+                    print(f"An error occurred while sending data: {e}")
+                    raise WebSocketConnectionClosed()
 
-                    data = {
-                        "loonState": [
-                            {
-                                "id": loon.loon_id,
-                                "type": loon.loon_type.name,
-                                "position_x": loon.current_pos[0],
-                                "position_y": loon.current_pos[1],
-                            }
-                            for loon in loon_batch
-                            if loon.active
-                            and loon in (await self.loon_wave.get_loons()).values()
-                        ]
-                    }
-
-                    try:
-                        await self.send(json.dumps(data))
-                    except RuntimeError as e:
-                        print(f"An error occurred while sending data: {e}")
-
-                    if batch_size <= num_loons:
-                        batch_size += random.randint(0, 4)
-                    # it is crucial to keep this low otherwise state data gets shared. Should be lower than shooting freq
-                    await asyncio.sleep(0.05)  # Update frequency
-
-            # adding 1 score every time a wave is completed
-            # there are multiple ways of increasing coins but for now adding 500 coins after every 10 waves
-            player_service = PlayerService()
-            player_score = await player_service.increase_score(self.player_id, 1)
-            data = {"update": {"score": player_score}}
-            if player_score % 10 == 0:
-                coins = await player_service.add_coins(self.player_id, 500)
-                data["update"]["coins"] = str(coins)
-            try:
-                await self.send(json.dumps(data))
-            except RuntimeError as e:
-                print(f"An error occurred while sending data: {e}")
-
-            # increasing difficulty
-            start_point_range += 10
-            num_loons += 5
-            # this essentially increases the movement of the loons
-            self.loon_wave.loon_delta += 1
+                # increasing difficulty
+                start_point_range += 10
+                num_loons += 5
+                # this essentially increases the movement of the loons
+                self.loon_wave.loon_delta += 1
+        except WebSocketConnectionClosed:
+            print("Client disconnected")
+            pass
 
     async def initialize_wave(
         self, num_loons, base_start_point, start_point_range, end_point
@@ -193,3 +197,7 @@ class LoonConsumer(AsyncWebsocketConsumer):
         Check if a loon with the given ID is present.
         """
         return self.loon_wave.is_loon_present(loon_id)
+
+
+class WebSocketConnectionClosed(Exception):
+    pass

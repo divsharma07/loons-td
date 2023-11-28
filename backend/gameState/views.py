@@ -59,9 +59,17 @@ class BuyItemView(APIView):
         except InsufficientFundsError:
             return Response({'message': 'Insufficient funds to buy item'}, status=status.HTTP_400_BAD_REQUEST)
 
-
 class UseItemView(APIView):
     def post(self, request):
+        """
+        Post method to use an item.
+
+        Args:
+            request (HttpRequest): The HTTP request object.
+
+        Returns:
+            Response: The HTTP response indicating the success or failure of using the item.
+        """
         player_id = request.data.get('playerId')
         item_id = request.data.get('itemId')
 
