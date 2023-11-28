@@ -66,11 +66,11 @@ The game is also currently hosted on this [url](https://loons-td.netlify.app/). 
 ## Final Notes
 
 ### Bugs and Issues
-There are no know bugs currently but here are some talking points in terms of the implementation:
-1. The end game mechanics currently just check if the loons escape from the top boundry. This can be further improved and made extensible.
+There are no known bugs currently but here are some talking points in terms of the implementation:
+1. The end-game mechanics currently just check if the loons escape from the top boundary. This can be further improved and made extensible.
 2. Current usage of ws and http is not ideal and usage of TLS certificates would be great once the API is deployed.
-3. The scoring and buying mechanism has server side checks, so client side exploitation will most probably be avoided.
-4. The difficulty scaling is embedded into code right now and could be separated into config, with the user chosing how they want to play.
+3. The scoring and buying mechanism has server-side checks, so client-side exploitation will most probably be avoided.
+4. The difficulty scaling is embedded into the code right now and could be separated into config, with the user choosing how they want to play.
 5. Currently the websocket server is tightly coupled with the HTTP server because it calls service methods to increment score and coin updates. This would need to be changed if we want to separate these servers.
 
 
@@ -78,10 +78,10 @@ There are no know bugs currently but here are some talking points in terms of th
 (In case my game becomes an overnight success)
 1. The current implementation of the game is not very scalable. The game is currently hosted on a single server and the game state is persisted in a local SQLite Database. Here are some considerations solely related to scalability:
 
-   - For better scalability we would require the backend to be hosted on an Virtual Machine scaleset or a container orchestration solution like K8S and then be put behind a load-balancer that supports WebSockets.
-   -  A hosted scalable database would be nice. We would ideally prefer a SQL-like database for future integrations where we could have leaderboards or fast changing player attributes that need consistency. A lot of NoSQL databases might also provide suitable consistency guarentees so this is debatable.
-   -  Redis is being used because of Django channels, but the redis is again hosted on the same backend server. If the number of concurrent connections is very high we would need to deploy a seperate Redis Cluster.
+   - For better scalability, we would require the backend to be hosted on a Virtual Machine scaleset or a container orchestration solution like K8S and then be put behind a load-balancer that supports WebSockets.
+   -  A hosted scalable database would be nice. We would ideally prefer a SQL-like database for future integrations where we could have leaderboards or fast-changing player attributes that need consistency. A lot of NoSQL databases might also provide suitable consistency guarantees so this is debatable.
+   -  Redis is being used because of Django channels, but the Redis is again hosted on the same backend server. If the number of concurrent connections is very high we would need to deploy a separate Redis Cluster.
 2. Given the usage of WebSockets and how expensive they are it would make sense to deploy the Http and Websocket server separately. Perhaps the initial usage of a pub-sub model makes sense for scalability.
-3. Usage of vanilla WebSockets also means that if the connection is lost then the game is over, which could be frustrating for the player. To avoid this we coul duse a higher abstraction like SignalR that takes care of reconnection and has fallback mechanisms. 
+3. Usage of vanilla WebSockets also means that if the connection is lost then the game is over, which could be frustrating for the player. To avoid this we could use a higher abstraction like SignalR that takes care of reconnection and has fallback mechanisms. 
 ---
 
