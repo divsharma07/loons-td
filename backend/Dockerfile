@@ -16,9 +16,5 @@ RUN pip install -r requirements.txt
 # Copy project
 COPY . /code/
 
-# Run migrations
-# Doing this only because we are using a local sqlite db
-RUN python manage.py migrate gameState
-
 # Run the application
 CMD ["uvicorn", "loonsTd.asgi:application", "--host", "0.0.0.0", "--port", "8000"]
