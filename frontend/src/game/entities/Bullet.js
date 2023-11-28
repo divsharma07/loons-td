@@ -15,6 +15,11 @@ class Bullet extends Phaser.GameObjects.Sprite {
      * @param {string} texture - The texture key of the bullet.
      */
     constructor(scene, x, y, texture, level) {
+
+        if (!scene.sys.isActive()) {
+            console.error('Cannot launch bullet: The scene is not active.');
+            return;
+        }
         super(scene, x, y, texture);
         this.scene = scene;
         this.setScale(0.02);

@@ -1,3 +1,4 @@
+from enum import Enum
 from asgiref.sync import sync_to_async
 from django.db.models import F
 from django.core.exceptions import ValidationError
@@ -18,7 +19,9 @@ class PlayerService:
         """
         from .models import Item, Inventory, Player
 
-        player = Player(id=id, coins=initial_coins, score=0, status="playing")
+        player = Player(
+            id=id, coins=initial_coins, score=0, status=Game_States.PLAYING.name
+        )
 
         # Save the Player instance to the database
         player.save()
@@ -50,6 +53,32 @@ class PlayerService:
             "quantity": inventory_item.quantity,
         }
 
+    async def game_over(self, player_id):
+        """
+        End the game for the player with the given ID and save the final score.
+
+        Args:
+            player_id (int): The ID of the player.
+            final_score (int): The final score of the player.
+
+        Returns:
+            Player: The updated player object.
+        """
+        from .models import Player
+
+        try:
+            # Get the player
+            player = await sync_to_async(Player.objects.get)(id=player_id)
+
+            # Update the player's status and score
+            player.status = Game_States.GAME_OVER.name
+
+            # Save the changes to the database
+            await sync_to_async(player.save)()
+        except Player.DoesNotExist:
+            raise ValueError("Player with ID {} does not exist".format(player_id))
+
+        return player
 
     async def add_coins(self, player_id, coins):
         """
@@ -70,12 +99,11 @@ class PlayerService:
             player.coins = F("coins") + coins
             await sync_to_async(player.save)()
             await sync_to_async(player.refresh_from_db)()
-            coins = await sync_to_async(getattr, thread_sensitive=True)(player, 'coins')
+            coins = await sync_to_async(getattr, thread_sensitive=True)(player, "coins")
 
             return coins
         except Player.DoesNotExist:
             raise ValueError("Player with ID {} does not exist".format(player_id))
-
 
     def get_coins(self, player_id):
         """
@@ -94,7 +122,6 @@ class PlayerService:
             return player.coins
         except Player.DoesNotExist:
             raise ValueError("Player with ID {} does not exist".format(player_id))
-
 
     async def increase_score(self, player_id, amount):
         """
@@ -153,10 +180,13 @@ class PlayerService:
             inventory_item = Inventory.objects.get(player=player, item=item)
             inventory_item.quantity = F("quantity") + 1
             inventory_item.save()
+            inventory_item.refresh_from_db()
         except Inventory.DoesNotExist:
             player.inventory.create(item=item, quantity=1)
         player.coins -= item.cost
         player.save()
+        return self._serialize_inventory_item(inventory_item)
+
 
     def use_item(self, player_id, item_name):
         from .models import Inventory, Item, Player
@@ -200,3 +230,8 @@ class ItemNotFoundError(Exception):
     """Item not found"""
 
     pass
+
+
+class Game_States(Enum):
+    PLAYING = 1
+    GAME_OVER = 2

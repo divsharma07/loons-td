@@ -52,9 +52,8 @@ class GamePanel extends Phaser.Scene {
             if (eachTurret.quantity > 0) {
                 const turretX = turretXStart + (i * turretSpacing); // Calculate Y position
                 const currTurret = new Turret(this, eachTurret.item_name, new Position(turretX, gameHeight - (panelHeight / 2)),
-                    eachTurret.item_name, false, null, this.playerId, true);
-                this.addCountToSprite(eachTurret.item_name, currTurret, eachTurret.quantity);
-                currTurret.quantity = eachTurret.quantity
+                    eachTurret.item_name, false, null, this.playerId, true, eachTurret.quantity);
+                // this.addCountToSprite(eachTurret.item_name, currTurret, eachTurret.quantity);
                 this.inventorySpritesMap.set(eachTurret.item_name, currTurret);
                 // Make turrets interactive, etc.
                 currTurret.setInteractive();
@@ -72,6 +71,34 @@ class GamePanel extends Phaser.Scene {
         this.scoreText = this.add.text(textSpacing, gameHeight - (panelHeight - 10), 'score: ' + this.score, { fontSize: '15px', fill: '#000' });
         this.coinsText = this.add.text(textSpacing, gameHeight - (panelHeight - 30), 'coins: ' + this.coins, { fontSize: '15px', fill: '#000' });
         // Add UI elements to the panel
+    }
+
+    destroy() {
+        // Remove event listeners
+        this.game.events.off(scoreUpdateKey, this.scoreUpdate, this);
+        this.game.events.off(coinUpdateKey, this.coinUpdate, this);
+
+        // Destroy text objects
+        if (this.scoreText) {
+            this.scoreText.destroy();
+        }
+        if (this.coinsText) {
+            this.coinsText.destroy();
+        }
+
+        // Destroy sprites and their countText objects
+        this.inventorySpritesMap.forEach((sprite, key) => {
+            if (sprite.countText) {
+                sprite.countText.destroy();
+            }
+            sprite.destroy();
+        });
+
+        // Clear the inventorySpritesMap
+        this.inventorySpritesMap.clear();
+
+        // Nullify the inventory
+        this.inventory = null;
     }
 
     pickItem(name, item) {
@@ -130,29 +157,8 @@ class GamePanel extends Phaser.Scene {
         sprite.countText = countText;
         this.inventorySpritesMap.set(turretName, sprite);
     }
-
-    // TODO separate the situations where we deal with refresh vs picking scenario
-
-    /**
-     * Refreshes the visibility and count text of the turret icons.
-     * This might be called due to a game event.
-     */
-    refreshItems(inventory) {
-        if (inventory === null) {
-            return;
-        }
-        // updating inventory
-        this.inventory = inventory;
-        inventory.forEach((eachTurret, i) => {
-            let turretSprite = this.inventorySpritesMap.get(eachTurret.item_name);
-            if (turretSprite !== null) {
-                if (turretSprite.countText) {
-                    turretSprite.countText.setText(eachTurret.quantity.toString());
-                    turretSprite.quantity = eachTurret.quantity;
-                }
-            }
-        });
-    }
 }
+
+
 
 export default GamePanel;

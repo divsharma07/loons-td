@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import Bullet from './Bullet';
 
 const popLoonEventKey = 'popLoon'
-const refreshItemsKey = 'refreshItems'
+const refreshItemKey = 'refreshItems'
 const coinUpdateKey = 'coinUpdate'
 /**
  * Represents a Turret entity in the game.
@@ -15,12 +15,12 @@ class Turret extends Phaser.GameObjects.Sprite {
      * @constructor
      * @param {Phaser.Scene} scene - The scene to which the Turret belongs.
      * @param {number} id - The ID of the Turret.
-     * @param {Phaser.Math.Vector2} position - The position of the Turret.
+     * @param {Position} position - The position of the Turret.
      * @param {string} type - The type of the Turret.
      * @param {boolean} isActive - Indicates if the Turret is active.
      * @param {Phaser.Physics.Arcade.Group} loonsGroup - The group of loons in the game.
      */
-    constructor(scene, id, position, type, isActive, loonsGroup, playerId, isOnPanel) {
+    constructor(scene, id, position, type, isActive, loonsGroup, playerId, isOnPanel, quantity) {
         super(scene, position.x, position.y, type);
         this.id = id;
         this.level = TurretType[type];
@@ -31,10 +31,15 @@ class Turret extends Phaser.GameObjects.Sprite {
         this.dragging = true;
         this.loonsGroup = loonsGroup;
         this.playerId = playerId;
+        this.isActive = isActive;
+        this.isOnPanel = isOnPanel;
+        this.position = position;
+        this.quantity = quantity;
         this.bulletsGroup = this.scene.physics.add.group({
             classType: Bullet,
         });
-        if (isActive) {
+        this.scene.physics.add.collider(this.bulletsGroup, this.loonsGroup, this.handleBulletLoonCollision, null, this);
+        if (this.isActive) {
             this.shootTimer = this.scene.time.addEvent({
                 delay: 1000, // 1000 milliseconds = 1 second
                 callback: this.shoot,
@@ -42,13 +47,20 @@ class Turret extends Phaser.GameObjects.Sprite {
                 loop: true
             });
         }
-        if (isOnPanel) {
-            this.plusButton = this.scene.add.image(position.x - 5, position.y - 20, 'plusButton');
+        if (this.isOnPanel) {
+            this.plusButton = this.scene.add.image(this.position.x - 5, this.position.y - 20, 'plusButton');
             this.plusButton.setInteractive();
             this.plusButton.setScale(0.08);
             this.plusButton.on('pointerdown', () => this.buyItem());
+            this.countText = this.scene.add.text(this.position.x - 5, this.position.y + 10, this.quantity, {
+                fontSize: '12px',
+                color: '#ffffff',
+                align: 'center'
+            }).setOrigin(0.5, 0);
+            this.countText.setVisible(true);
+
+            // Store the text object in the sprite for easy access
         }
-        this.scene.physics.add.collider(this.bulletsGroup, this.loonsGroup, this.handleBulletLoonCollision, null, this);
     }
 
     /**
@@ -70,12 +82,37 @@ class Turret extends Phaser.GameObjects.Sprite {
         })
             .then(response => response.json())
             .then(data => {
-                this.scene.game.events.emit(refreshItemsKey, data.inventory);
+                // this.scene.game.events.emit(refreshItemKey, data.inventory_item);
+                this.refreshItem(data.inventory_item);
                 this.scene.game.events.emit(coinUpdateKey, data.coins);
             })
             .catch((error) => {
                 console.error('Error:', error);
             });
+    }
+
+    /**
+     * @typedef {Object} InventoryItem
+     * @property {string} id - The ID of the inventory item.
+     * @property {number} quantity - The quantity of the inventory item.
+     * @property {string} item_number - The quantity of the inventory item.
+    */
+
+    /**
+     *  Refreshes the item.
+     * @param {InventoryItem} inventory_item 
+     * 
+     */
+    refreshItem(inventory_item) {
+        if (inventory_item === null) {
+            return;
+        }
+        // updating inventory
+        if (inventory_item !== null) {
+            if (this.countText) {
+                this.countText.setText(inventory_item.quantity.toString());
+            }
+        }
     }
 
     /**
@@ -137,6 +174,11 @@ class Turret extends Phaser.GameObjects.Sprite {
      * @param {number} nearestLoon - The ID of the nearest loon.
      */
     launchBullet(nearestLoon) {
+        // Check if the scene is active
+        if (!this || !this.scene) {
+            console.error('Cannot launch bullet: The turret or its scene is undefined.');
+            return;
+        }
         const bulletSpeed = 500; // Adjust speed as needed
         const bullet = new Bullet(this.scene, this.x, this.y, 'bullet', this.level);
         // adding to physics group to enable collision
@@ -161,16 +203,6 @@ class Turret extends Phaser.GameObjects.Sprite {
             bullet.destroy();
         } else {
             bullet.destroy();
-            console.log("loon inactive");
-        }
-    }
-
-    /**
-     * Destroys the Turret.
-     */
-    destroy() {
-        if (this.sprite) {
-            this.sprite.destroy();
         }
     }
 }

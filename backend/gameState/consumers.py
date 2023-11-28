@@ -63,8 +63,13 @@ class LoonConsumer(AsyncWebsocketConsumer):
 
                     if not succesful:
                         self.is_game_over = True
-                        data = {"msg": "Game Over"}
-                        await self.send(json.dumps(data))
+                        player_service = PlayerService()
+                        player = await player_service.game_over(self.player_id)
+                        data = {"msg": "Game Over", "score": player.score, "coins": player.coins}
+                        try:
+                            await self.send(json.dumps(data))
+                        except RuntimeError as e:
+                            print(f"An error occurred while sending data, websocet connection closed {e}")
                         break
 
                     # Prepare data for sending
@@ -90,7 +95,10 @@ class LoonConsumer(AsyncWebsocketConsumer):
                         ]
                     }
 
-                    await self.send(json.dumps(data))
+                    try:
+                        await self.send(json.dumps(data))
+                    except RuntimeError as e:
+                        print(f"An error occurred while sending data: {e}")
 
                     if batch_size <= num_loons:
                         batch_size += random.randint(0, 4)
@@ -105,7 +113,10 @@ class LoonConsumer(AsyncWebsocketConsumer):
             if player_score % 10 == 0:
                 coins = await player_service.add_coins(self.player_id, 500)
                 data["update"]["coins"] = str(coins)
-            await self.send(json.dumps(data))
+            try:
+                await self.send(json.dumps(data))
+            except RuntimeError as e:
+                print(f"An error occurred while sending data: {e}")
 
             # increasing difficulty
             start_point_range += 10

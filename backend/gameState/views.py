@@ -52,10 +52,10 @@ class BuyItemView(APIView):
 
         player_service = PlayerService()
         try:
-            player_service.buy_item(player_id, item_id)
-            inventory = player_service.get_inventory(player_id)
+            inventory_item = player_service.buy_item(player_id, item_id)
+            # inventory = player_service.get_inventory_item(player_id, item_id)
             coins = player_service.get_coins(player_id)
-            return Response({'message': 'Item bought successfully', 'inventory': inventory, 'coins': coins}, status=status.HTTP_200_OK)
+            return Response({'message': 'Item bought successfully', 'inventory_item': inventory_item, 'coins': coins}, status=status.HTTP_200_OK)
         except InsufficientFundsError:
             return Response({'message': 'Insufficient funds to buy item'}, status=status.HTTP_400_BAD_REQUEST)
 
