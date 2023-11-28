@@ -9,7 +9,22 @@ import React from 'react';
  */
 const StartButton = ({ onStart }) => {
     return (
-        <button id="start-button" onClick={onStart} style={{ position: 'absolute', left: "40%", zIndex: 10 }}>
+        <button id="start-button" onClick={onStart} style={{
+            position: 'fixed',
+            top: '70vh',
+            left: '50vw',
+            transform: 'translate(-50%, -50%)',
+            zIndex: 10,
+            padding: '10px 20px',
+            fontSize: '20px',
+            borderRadius: '5px',
+            border: 'none',
+            backgroundColor: '#4CAF50',
+            color: 'white',
+            cursor: 'pointer',
+            outline: 'none',
+            boxShadow: '0 9px #999'
+        }}>
             Start Game
         </button>
     );

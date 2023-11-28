@@ -3,6 +3,7 @@ import Bullet from './Bullet';
 
 const popLoonEventKey = 'popLoon'
 const coinUpdateKey = 'coinUpdate'
+const serverAddr = process.env.REACT_APP_SERVER_URL;
 /**
  * Represents a Turret entity in the game.
  * @class
@@ -49,7 +50,7 @@ class Turret extends Phaser.GameObjects.Sprite {
         if (this.isOnPanel) {
             this.plusButton = this.scene.add.image(this.position.x - 5, this.position.y - 20, 'plusButton');
             this.plusButton.setInteractive();
-            this.plusButton.setScale(0.08);
+            this.plusButton.setScale(0.03);
             this.plusButton.on('pointerdown', () => this.buyItem());
             this.countText = this.scene.add.text(this.position.x - 5, this.position.y + 10, this.quantity, {
                 fontSize: '12px',
@@ -57,8 +58,6 @@ class Turret extends Phaser.GameObjects.Sprite {
                 align: 'center'
             }).setOrigin(0.5, 0);
             this.countText.setVisible(true);
-
-            // Store the text object in the sprite for easy access
         }
     }
 
@@ -67,8 +66,9 @@ class Turret extends Phaser.GameObjects.Sprite {
      * Makes a server call to buy the item and updates the game inventory.
      */
     buyItem() {
+        const buyUrl = `http://${serverAddr}/game/buy/`
         // Replace with your actual server call
-        fetch('http://localhost:8000/game/buy/', {
+        fetch(buyUrl, {
             method: 'POST',
             body: JSON.stringify({
                 itemId: this.id,
@@ -109,6 +109,7 @@ class Turret extends Phaser.GameObjects.Sprite {
         // updating inventory
         if (inventory_item !== null) {
             if (this.countText) {
+                this.quantity = inventory_item.quantity;
                 this.countText.setText(inventory_item.quantity.toString());
             }
         }

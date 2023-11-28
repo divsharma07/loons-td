@@ -22,7 +22,7 @@ class Loon extends Phaser.GameObjects.Sprite {
         scene.add.existing(this);
         this.scene = scene;
         this.scene.physics.add.existing(this);
-        this.setScale(0.03);
+        this.setScale(0.03);        
     }
 
     /**

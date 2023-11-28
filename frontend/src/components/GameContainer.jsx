@@ -4,8 +4,8 @@ import StartButton from "./StartButton";
 import Phaser from "phaser";
 import Game from "../game/entities/Game";
 
-const gameHeight = 600;
-const gameWidth = 1275;
+const gameHeight = 630;
+const gameWidth = 1280;
 const popLoonKey = 'popLoon'
 const scoreUpdateKey = 'scoreUpdate'
 const coinUpdateKey = 'coinUpdate'
@@ -20,6 +20,9 @@ const config = {
     scene: [
         Game
     ],
+    scale: {
+        mode: Phaser.Scale.FIT
+    },
     antialias: true,
     physics: {
         default: 'arcade',
@@ -31,13 +34,11 @@ const config = {
 };
 // configuring loon popping event
 const game = new Phaser.Game(config);
+const serverAddr = process.env.REACT_APP_SERVER_URL;
 
-const GameContainer = ({ onRestart }) => {
+const GameContainer = () => {
     const socketRef = useRef(null);
     const [gameStarted, setGameStarted] = useState(false);
-    // const abortController = useRef(new AbortController());
-
-
     // const email = 'sharmadivyanshu1996@gmail.com'; // Replace with your email
     // const serverUrl = `wss://pronto-challenge.ngrok.app/${email}/ws`;
     // const serverUrl = `ws://localhost:8000/ws/loonsLocation/${playerId}`
@@ -48,14 +49,14 @@ const GameContainer = ({ onRestart }) => {
     };
 
 
+
     useEffect(() => {
-        // Create a new game instance
-        // const game = gameRef.current;
         if (gameStarted) {
             // fetching game config
             const fetchDataAndStartGame = async () => {
                 try {
-                    const response = (await fetch('http://localhost:8000/game/start/'));
+                    const startGameUrl = `http://${serverAddr}/game/start/`
+                    const response = (await fetch(startGameUrl));
 
 
                     if (!response.ok) {
@@ -68,14 +69,10 @@ const GameContainer = ({ onRestart }) => {
                     const inventory = data.game_config.game_settings.inventory;
                     const primaryScene = game.scene.getScene('Game');
 
-                    // if (gameEnded) {
-                    //     game.events.emit('reloadGame');
-                    // }
                     if (primaryScene !== null) {
                         try {
                             game.events.emit('startGame', playerId, initialCoins, inventory);
-                            // primaryScene.startGame(playerId, initialCoins,
-                            //     inventory);
+
                         }
                         catch (e) {
                             console.error('Error starting game:', e);
@@ -112,11 +109,11 @@ const GameContainer = ({ onRestart }) => {
                             socketRef.current.sendMessage(message);
                         }
                     };
-                    const serverUrl = `ws://localhost:8000/ws/loonsLocation/${playerId}/`
+                    const webSocketUrl = `ws://${serverAddr}/ws/loonsLocation/${playerId}/`
 
                     // reusuing the socket conneciton if available
 
-                    let newSocket = new WebSocketService(serverUrl);
+                    let newSocket = new WebSocketService(webSocketUrl);
 
                     socketRef.current = newSocket;
 
@@ -176,7 +173,7 @@ const GameContainer = ({ onRestart }) => {
 
 
 
-    return <div id="phaser-container" style={{ position: 'relative', width: '100%', height: '100%' }}>
+    return <div id="phaser-container" style={{ position: 'relative', width: '100%', height: '100%',  display: 'flex', justifyContent: 'center', alignItems: 'center'  }}>
         {!gameStarted && <StartButton onStart={startGame} />}
         {/* {gameEnded && <RestartButton onRestart={restartGame} />} */}
     </div>;

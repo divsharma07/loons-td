@@ -5,6 +5,7 @@ import Position from './Position';
 const scoreUpdateKey = 'scoreUpdate'
 const refreshItemsKey = 'refreshItems'
 const coinUpdateKey = 'coinUpdate'
+const serverAddr = process.env.REACT_APP_SERVER_URL;
 
 
 
@@ -30,6 +31,7 @@ class GamePanel extends Phaser.Scene {
 
     /**
      * Creates the game panel and its elements.
+     * @method
      */
     create() {
         // setting up relevant events
@@ -73,6 +75,10 @@ class GamePanel extends Phaser.Scene {
         // Add UI elements to the panel
     }
 
+        /**
+     * Destroys the game panel and its elements.
+     * @method
+     */
     destroy() {
         // Remove event listeners
         this.game.events.off(scoreUpdateKey, this.scoreUpdate, this);
@@ -101,6 +107,13 @@ class GamePanel extends Phaser.Scene {
         this.inventory = null;
     }
 
+
+        /**
+     * Picks an item from the inventory.
+     * @method
+     * @param {string} name - The name of the item.
+     * @param {object} item - The item object.
+     */
     pickItem(name, item) {
         if (item !== null) {
             if (item && item.quantity > 0) {
@@ -112,18 +125,34 @@ class GamePanel extends Phaser.Scene {
         }
     }
 
+        /**
+     * Updates the score.
+     * @method
+     * @param {number} score - The new score value.
+     */
     scoreUpdate(score) {
         this.score = score;
         this.scoreText.setText('score: ' + this.score)
     }
 
+        /**
+     * Updates the number of coins.
+     * @method
+     * @param {number} coins - The new number of coins.
+     */
     coinUpdate(coins) {
         this.coins = coins;
         this.coinsText.setText('coins: ' + this.coins)
     }
 
+        /**
+     * Uses an item from the inventory.
+     * @method
+     * @param {string} itemId - The ID of the item to use.
+     */
     useItem(itemId) {
-        fetch('http://localhost:8000/game/use/', {
+        const buyUrl = `http://${serverAddr}/game/buy/`
+        fetch(buyUrl, {
             method: 'POST',
             body: JSON.stringify({
                 itemId: itemId,
@@ -141,8 +170,10 @@ class GamePanel extends Phaser.Scene {
 
     /**
      * Adds the count text to the turret sprite.
+     * @method
+     * @param {string} turretName - The name of the turret.
      * @param {Phaser.GameObjects.Sprite} sprite - The turret sprite.
-     * @param {string} count - The count to display.
+     * @param {number} count - The count to display.
      */
     addCountToSprite(turretName, sprite, count) {
         // let container = this.add.container(sprite.x, sprite.y);
