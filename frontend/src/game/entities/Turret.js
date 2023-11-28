@@ -38,11 +38,11 @@ class Turret extends Phaser.GameObjects.Sprite {
         this.isOnPanel = isOnPanel;
         this.position = position;
         this.quantity = quantity;
-        this.bulletsGroup = this.scene.physics.add.group({
-            classType: Bullet,
-        });
-        this.scene.physics.add.collider(this.bulletsGroup, this.loonsGroup, this.handleBulletLoonCollision, null, this);
-        if (this.isActive) {
+        if (this.isActive && !this.isOnPanel) {
+            this.bulletsGroup = this.scene.physics.add.group({
+                classType: Bullet,
+            });
+            this.scene.physics.add.collider(this.bulletsGroup, this.loonsGroup, this.handleBulletLoonCollision, null, this);
             this.shootTimer = this.scene.time.addEvent({
                 delay: 1000, // 1000 milliseconds = 1 second
                 callback: this.shoot,
