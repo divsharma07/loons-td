@@ -19,6 +19,9 @@ class Turret extends Phaser.GameObjects.Sprite {
      * @param {string} type - The type of the Turret.
      * @param {boolean} isActive - Indicates if the Turret is active.
      * @param {Phaser.Physics.Arcade.Group} loonsGroup - The group of loons in the game.
+     * @param {number} playerId - The Id of the current player
+     * @param {boolean} isOnPanel - Determines if the turret is on panel, ingame turrets don't define this
+     * @param {number} quantity - On panel turrets define quantity i.e. the available number of this item
      */
     constructor(scene, id, position, type, isActive, loonsGroup, playerId, isOnPanel, quantity) {
         super(scene, position.x, position.y, type);
@@ -50,7 +53,7 @@ class Turret extends Phaser.GameObjects.Sprite {
         if (this.isOnPanel) {
             this.plusButton = this.scene.add.image(this.position.x - 5, this.position.y - 20, 'plusButton');
             this.plusButton.setInteractive();
-            this.plusButton.setScale(0.03);
+            this.plusButton.setScale(0.01);
             this.plusButton.on('pointerdown', () => this.buyItem());
             this.countText = this.scene.add.text(this.position.x - 5, this.position.y + 10, this.quantity, {
                 fontSize: '12px',
