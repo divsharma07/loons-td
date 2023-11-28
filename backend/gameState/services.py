@@ -210,6 +210,8 @@ class PlayerService:
                 raise InsufficientQuantityError("Insufficient quantity of item")
             inventory_item.quantity -= 1
             inventory_item.save()
+            inventory_item.refresh_from_db()
+            return self._serialize_inventory_item(inventory_item)
         except Inventory.DoesNotExist:
             raise ItemNotFoundError("Item not found in inventory")
 

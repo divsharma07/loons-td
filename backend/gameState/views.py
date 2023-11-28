@@ -78,8 +78,8 @@ class UseItemView(APIView):
 
         player_service = PlayerService()
         try:
-            player_service.use_item(player_id, item_id)
-            return Response({'message': 'Item used successfully'}, status=status.HTTP_200_OK)
+            inventory_item = player_service.use_item(player_id, item_id)
+            return Response({'message': 'Item used successfully', 'inventory_item': inventory_item}, status=status.HTTP_200_OK)
         except ItemNotFoundError:
             return Response({'message': 'Item not found in inventory'}, status=status.HTTP_400_BAD_REQUEST)
         except InsufficientQuantityError:

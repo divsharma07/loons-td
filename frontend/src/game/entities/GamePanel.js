@@ -84,10 +84,7 @@ class GamePanel extends Phaser.Scene {
     pickItem(name, item) {
         if (item !== null) {
             if (item && item.quantity > 0) {
-                item.quantity--;
-                this.inventorySpritesMap.set(name, item);
-                this.useItem(name)
-                item.countText.setText(item.quantity.toString());
+                this.useItem(name, item)
             }
         }
     }
@@ -117,7 +114,7 @@ class GamePanel extends Phaser.Scene {
      * @method
      * @param {string} itemId - The ID of the item to use.
      */
-    useItem(itemId) {
+    useItem(itemId, item) {
         const useUrl = `http://${serverAddr}/game/use/`
         fetch(useUrl, {
             method: 'POST',
@@ -130,6 +127,11 @@ class GamePanel extends Phaser.Scene {
             },
         })
             .then(response => response.json())
+            .then(data => {
+                // this.scene.game.events.emit(refreshItemKey, data.inventory_item);
+                item.quantity = data.inventory_item.quantity;
+                item.countText.setText(item.quantity.toString());
+            })
             .catch((error) => {
                 console.error('Error:', error);
             });
