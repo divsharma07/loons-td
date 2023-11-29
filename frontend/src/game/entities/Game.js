@@ -117,20 +117,18 @@ class Game extends Phaser.Scene {
      */
     startGame(playerId, initialCoins, inventory) {
         this.scene.remove('GameOver');
+        // this.scene.remove('GamePanel');
         this.playerId = playerId;
         console.log("player is " + playerId);
         this.initialCoins = initialCoins;
         this.inventory = inventory;
-        // Add and start the new scene
-        // this.scene.remove('GamePanel');
-        // if(this.game.getScene('GamePanel')) {
-        //     let gamePanel = this.scene.getScene('GamePanel');
-        //     gamePanel.inventory = inventory;
-        //     gamePanel.initialCoins = initialCoins;
-        //     gamePanel.playerId = playerId; 
-        // } else {
-        this.scene.add('GamePanel', new GamePanel(inventory, playerId, initialCoins), true);
-        // }
+        let gamePanel = this.scene.get('GamePanel');
+        if (gamePanel) {
+            gamePanel.reset(inventory, playerId, initialCoins);
+        } else {
+            // If the GamePanel scene doesn't exist, add and start it
+            this.scene.add('GamePanel', new GamePanel(inventory, playerId, initialCoins), true);
+        }
     }
 
 
@@ -138,13 +136,13 @@ class Game extends Phaser.Scene {
      * Ends the game.
      */
     endGame(coins, score) {
-        this.loonsGroup.clear(true);
-        this.turretsGroup.clear(true, true);
-        // const gamePanel = this.scene.getScene('GamePanel');
-        this.scene.remove('GamePanel');
+        if(this.loonsGroup) {
+            this.loonsGroup.clear(true, true);
+        }
+        if(this.turretsGroup) {
+            this.turretsGroup.clear(true, true);
+        }
         this.scene.add('GameOver', new GameOver(coins, score), true);
-        // this.scene.bringToTop('GameOver');
-        //this.scene.start('GameOver');
     }
 
 
