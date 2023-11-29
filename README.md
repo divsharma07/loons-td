@@ -23,7 +23,14 @@ Welcome to my implementation of the 'Loons Tower Defense game!  Featuring a Reac
    <img src="frontend/public/assets/BasicLoon.png" width="60" height="60">
 - **AdvancedLoon**: Constitutes of 90% of the total wave 'loon count.
    
-     <img src="frontend/public/assets/AdvancedLoon.png" width="50" height="50">
+   <img src="frontend/public/assets/AdvancedLoon.png" width="50" height="50">
+
+
+### Gameplay Screenshot
+
+ <img src="gameplay.jpg" width="600" height="300">
+
+
 
 ### Special Features
 

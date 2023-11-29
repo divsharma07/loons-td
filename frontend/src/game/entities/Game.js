@@ -23,11 +23,12 @@ class Game extends Phaser.Scene {
      * Preloads all the assets required for the game.
      */
     preload() {
-
         // preloading all sprites and images
         this.load.image('base_tiles', 'assets/base_tiles.png');
         this.load.tilemapTiledJSON('tilemap', 'assets/base_tiles.json');
         this.load.image("bullet", "assets/bullet.png");
+        // preloading music 
+        this.load.audio('backgroundMusic', 'assets/backgroundMusic.mp3');
         // load all loons
         this.loonSprites.forEach((loon) => {
             this.load.image(loon, `assets/${loon}.png`);
@@ -48,7 +49,7 @@ class Game extends Phaser.Scene {
         this.registry.set('loonSprites', this.loonSprites);
         // this.setLoons(new Map());
         // subscribe to turret dragging event
-
+        this.backgroundMusic = this.sound.add('backgroundMusic');
         // Create a physics group for loons
         this.loonsGroup = this.physics.add.group({
             classType: Loon,
@@ -83,6 +84,9 @@ class Game extends Phaser.Scene {
         // });
     }
 
+    /**
+     * Reloads the game scene.
+     */
     reloadGame() {
         this.scene.restart();
     }
@@ -114,10 +118,13 @@ class Game extends Phaser.Scene {
 
     /**
      * Starts the game by either starting the existing GamePanel scene or adding and starting a new GamePanel scene.
+     * @param {string} playerId - The ID of the player.
+     * @param {number} initialCoins - The initial number of coins for the player.
+     * @param {Object} inventory - The inventory of the player.
      */
     startGame(playerId, initialCoins, inventory) {
         this.scene.remove('GameOver');
-        // this.scene.remove('GamePanel');
+        this.backgroundMusic.play({ loop: true });
         this.playerId = playerId;
         console.log("player is " + playerId);
         this.initialCoins = initialCoins;
@@ -131,9 +138,10 @@ class Game extends Phaser.Scene {
         }
     }
 
-
     /**
      * Ends the game.
+     * @param {number} coins - The number of coins the player has.
+     * @param {number} score - The score of the player.
      */
     endGame(coins, score) {
         if(this.loonsGroup) {
@@ -142,10 +150,9 @@ class Game extends Phaser.Scene {
         if(this.turretsGroup) {
             this.turretsGroup.clear(true, true);
         }
+        this.backgroundMusic.stop();
         this.scene.add('GameOver', new GameOver(coins, score), true);
     }
-
-
 
     /**
      * Destroys the game scene.
@@ -178,6 +185,7 @@ class Game extends Phaser.Scene {
      * Creates a new loon in the game.
      * @param {number} id - The ID of the loon.
      * @param {Position} position - The position of the loon.
+     * @param {string} loonType - The type of the loon.
      */
     createLoon(id, position, loonType) {
         let loon = new Loon(this, id, position, loonType)
