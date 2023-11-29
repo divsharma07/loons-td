@@ -22,7 +22,7 @@ class Bullet extends Phaser.GameObjects.Sprite {
         }
         super(scene, x, y, texture);
         this.scene = scene;
-        this.setScale(0.02);
+        this.setScale(0.025);
         this.scene.add.existing(this);
         this.scene.physics.add.existing(this);
         this.body.setVelocity(200, 0);
@@ -37,6 +37,7 @@ class Bullet extends Phaser.GameObjects.Sprite {
      */
     moveToTarget(targetX, targetY, speed) {
         const angle = Phaser.Math.Angle.Between(this.x, this.y, targetX, targetY);
+        this.setRotation(angle + 1.5);
         this.scene.physics.velocityFromRotation(angle, speed, this.body.velocity);
     }
 }
