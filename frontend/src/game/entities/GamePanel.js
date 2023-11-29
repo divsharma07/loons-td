@@ -22,11 +22,27 @@ class GamePanel extends Phaser.Scene {
         super({ key: 'GamePanel' });
         this.inventory = inventory;
         this.playerId = playerId;
-        this.inventorySpritesMap = new Map();
         this.scoreText = null;
         this.coinsText = null;
         this.coins = coins;
         this.score = 0;
+        this.turrets = new Map(); 
+    }
+
+    /**
+     * This reset the panel and all its data.
+     * This is essentially a workaround for removing and adding a new panel, but doing that
+     * was causing issues with events.
+     * TODO: do this the right way and figure out events related issue.
+     * @param {InventoryItem} inventory item 
+     * @param {number} playerId new player id 
+     * @param {number} initialCoins new player initial coins 
+     */
+    reset(inventory, playerId, initialCoins) {
+        this.inventory = inventory;
+        this.playerId = playerId;
+        this.initialCoins = initialCoins;
+        this.updatePanel(initialCoins);
     }
 
     /**
@@ -35,13 +51,13 @@ class GamePanel extends Phaser.Scene {
      */
     create() {
         // setting up relevant events
-        this.game.events.on(refreshItemsKey, (inventory) => this.refreshItems(inventory), this);
+        this.game.events.on(refreshItemsKey, (inventory) => this.refreshItems(inventory), true);
         this.game.events.on(scoreUpdateKey, (score) => {
             this.scoreUpdate(score);
-        });
+        }, this);
         this.game.events.on(coinUpdateKey, (coins) => {
             this.coinUpdate(coins);
-        });
+        }, this);
         const gameHeight = this.game.config.height;
         const panelHeight = 50;
         const panelWidth = this.game.config.width;
@@ -55,8 +71,8 @@ class GamePanel extends Phaser.Scene {
                 const turretX = turretXStart + (i * turretSpacing); // Calculate Y position
                 const currTurret = new Turret(this, eachTurret.item_name, new Position(turretX, gameHeight - (panelHeight / 2)),
                     eachTurret.item_name, false, null, this.playerId, true, eachTurret.quantity);
+                this.turrets.set(eachTurret.item_name, currTurret);  // Change this line
                 // this.addCountToSprite(eachTurret.item_name, currTurret, eachTurret.quantity);
-                this.inventorySpritesMap.set(eachTurret.item_name, currTurret);
                 // Make turrets interactive, etc.
                 currTurret.setInteractive();
                 // this.input.setDraggable(turret);
@@ -105,6 +121,9 @@ class GamePanel extends Phaser.Scene {
      * @param {number} coins - The new number of coins.
      */
     coinUpdate(coins) {
+        if(typeof coins === 'undefined') {
+            return
+        }
         this.coins = coins;
         this.coinsText.setText('coins: ' + this.coins)
     }
@@ -138,24 +157,23 @@ class GamePanel extends Phaser.Scene {
     }
 
     /**
-     * Adds the count text to the turret sprite.
-     * @method
-     * @param {string} turretName - The name of the turret.
-     * @param {Phaser.GameObjects.Sprite} sprite - The turret sprite.
-     * @param {number} count - The count to display.
+     * Updates the panel, using a stored map that contains a reference to all the sprites.
      */
-    addCountToSprite(turretName, sprite, count) {
-        // let container = this.add.container(sprite.x, sprite.y);
-        // container.add(sprite);
-        const countText = this.add.text(sprite.x - 5, sprite.y + 10, count.toString(), {
-            fontSize: '12px',
-            color: '#ffffff',
-            align: 'center'
-        }).setOrigin(0.5, 0);
-        countText.setVisible(true);
-        // Store the text object in the sprite for easy access
-        sprite.countText = countText;
-        this.inventorySpritesMap.set(turretName, sprite);
+    updatePanel() {
+        this.inventory.forEach((inventoryItem) => {
+            // Get the corresponding turret from this.turrets
+            const turret = this.turrets.get(inventoryItem.item_name);
+
+            // If the turret was found, update its countText
+            if (turret) {
+                turret.playerId = this.playerId;
+                turret.quantity = inventoryItem.quantity;
+                turret.countText.setText(inventoryItem.quantity.toString());
+            }
+        });
+
+        this.coinsText.setText('coins: ' + this.initialCoins);
+        this.scoreText.setText('score: 0');
     }
 }
 

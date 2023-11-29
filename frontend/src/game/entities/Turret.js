@@ -106,12 +106,12 @@ class Turret extends Phaser.GameObjects.Sprite {
      * 
      */
     refreshItem(inventory_item) {
-        if (inventory_item === null) {
+        if (inventory_item === null || typeof inventory_item === 'undefined') {
             return;
         }
         // updating inventory
         if (inventory_item !== null) {
-            if (this.countText) {
+            if (this.countText && inventory_item.quantity) {
                 this.quantity = inventory_item.quantity;
                 this.countText.setText(inventory_item.quantity.toString());
             }
